@@ -32,7 +32,14 @@ import bcrypt
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from streamlit_js_eval import streamlit_js_eval, get_geolocation
+import streamlit as st
+# ... باقي المكتبات ...
 
+# ضيف الكود هنا
+if 'check_attempts' not in st.session_state:
+    st.session_state.check_attempts = 0
+
+# بعد كدة كمل باقي الكود بتاعك عادي
 # --- 1. الإعدادات الأساسية (يجب أن تكون في البداية تماماً) ---
 st.set_page_config(page_title="Safe Pulse Pro", layout="wide", initial_sidebar_state="collapsed")
 
