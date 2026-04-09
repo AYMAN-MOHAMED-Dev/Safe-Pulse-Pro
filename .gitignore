@@ -1,0 +1,30 @@
+# منع رفع مفاتيح التشفير وملفات البيانات# منع رفع مفتاح Firebase السحابي
+serviceAccountKey.json
+# منع رفع مفاتيح تشفير البيانات المحلية
+assets/internal.key
+# منع رفع قاعدة بيانات المستخدمين المحلية والتوكنات
+assets/user_registry.json
+assets/sessions.json
+# منع رفع مكتبات Node.js الكبيرة التي ظهرت في صورك
+node_modules/
+# منع رفع ملفات بيئة العمل والملفات المؤقتة
+__pycache__/
+*.pyc
+.env
+
+*.key
+*.dat
+*.json
+# منع رفع إعدادات ستريمليت المحلية التي تحتوي على المفاتيح (Secrets)
+*.streamlit/
+*.assets/.streamlit.toml
+# منع رفع ملفات النظام والمؤقتة
+__pycache__/
+*.py[cod]
+*.DS_Store
+*.env
+*.venv/
+*.user_registry.json/
+*.view-data.py
+*.decoder.py
+*.view-data.py
