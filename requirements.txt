@@ -1,4 +1,4 @@
-echo "streamlit
+"streamlit
 google-generativeai
 bcrypt
 cryptography
