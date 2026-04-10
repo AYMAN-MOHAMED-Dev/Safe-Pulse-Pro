@@ -1,6 +1,6 @@
-"streamlit
+streamlit
 google-generativeai
 bcrypt
 cryptography
 streamlit-js-eval
-firebase-admin" > requirements.txt
+firebase-admin > requirements.txt
