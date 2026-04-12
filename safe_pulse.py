@@ -51,8 +51,8 @@ def init_firebase():
         # التأكد من وجود مفاتيح firebase في السكرتية
         if "firebase" in st.secrets:
             # هنا السحر: تحويل بيانات السكرتية لقاموس يفهمه Firebase
-            cert_dict = dict(st.secrets["firebase"])
-            cred = credentials.Certificate(cert_dict)
+            fb_conf = dict(st.secrets["firebase"])
+            cred = credentials.Certificate(fb_conf)
             firebase_admin.initialize_app(cred)
             return True
         else:
