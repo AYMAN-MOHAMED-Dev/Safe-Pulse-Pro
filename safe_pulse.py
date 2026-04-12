@@ -43,34 +43,26 @@ def get_dynamic_key(base_name):
 db = None
 
 def init_firebase():
-    global db
-    if not firebase_admin._apps:
-        # تأكد من أن هذا الملف موجود في نفس مجلد السكريبت
-        json_file_path = 'serviceAccountKey.json' 
-        
-        if os.path.exists(json_file_path):
-            try:
-                with open(json_file_path) as f:
-                    cert_dict = json.load(f)
-                
-                # إصلاح تنسيق المفتاح (حل مشكلة InvalidPadding)
-                if 'private_key' in cert_dict:
-                    cert_dict['private_key'] = cert_dict['private_key'].replace('\\n', '\n')
-                
-                cred = credentials.Certificate(cert_dict)
-                firebase_admin.initialize_app(cred)
-                db = firestore.client()
-                return True
-            except Exception as e:
-                st.error(f"خطأ في تهيئة Firebase: {e}")
-                return False
+    try:
+        # إذا كان التطبيق مفعلاً مسبقاً لا تفعل شيئاً
+        if firebase_admin._apps:
+            return True
+            
+        # التأكد من وجود مفاتيح firebase في السكرتية
+        if "firebase" in st.secrets:
+            # هنا السحر: تحويل بيانات السكرتية لقاموس يفهمه Firebase
+            cert_dict = dict(st.secrets["firebase"])
+            cred = credentials.Certificate(cert_dict)
+            firebase_admin.initialize_app(cred)
+            return True
         else:
-            st.error("ملف serviceAccountKey.json غير موجود!")
-            return False
-    else:
-        # إذا كان التطبيق مفعلاً مسبقاً، فقط نربط db
-        db = firestore.client()
-        return True
+            # إذا لم يجد سكرتية، يبحث عن الملف المحلي (للعمل على جهازك كالي)
+            cred = credentials.Certificate("serviceAccountKey.json")
+            firebase_admin.initialize_app(cred)
+            return True
+    except Exception as e:
+        st.error(f"خطأ في تهيئة Firebase: {e}")
+        return False
 
 # 2. تشغيل دالة التهيئة
 init_firebase()
