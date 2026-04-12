@@ -40,32 +40,36 @@ def get_dynamic_key(base_name):
     random_id = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
     return f"{base_name}_{random_id}"
 # 1. تهيئة المتغير db كـ None في البداية لتجنب NameError
-db = None
+import firebase_admin
+from firebase_admin import credentials, firestore
+import streamlit as st
+
+# تعريف المتغير بشكل عالمي في بداية الملف
+if 'db' not in locals():
+    db = None
 
 def init_firebase():
-    try:
-        # إذا كان التطبيق مفعلاً مسبقاً لا تفعل شيئاً
-        if firebase_admin._apps:
-            return True
-            
-        # التأكد من وجود مفاتيح firebase في السكرتية
-        if "firebase" in st.secrets:
-            # هنا السحر: تحويل بيانات السكرتية لقاموس يفهمه Firebase
-            fb_conf = dict(st.secrets["firebase"])
-            cred = credentials.Certificate(fb_conf)
-            firebase_admin.initialize_app(cred)
-            return True
-        else:
-            # إذا لم يجد سكرتية، يبحث عن الملف المحلي (للعمل على جهازك كالي)
-            cred = credentials.Certificate("serviceAccountKey.json")
-            firebase_admin.initialize_app(cred)
-            return True
-    except Exception as e:
-        st.error(f"خطأ في تهيئة Firebase: {e}")
-        return False
+    global db # هام جداً للوصول للمتغير في كل مكان
+    if not firebase_admin._apps:
+        try:
+            if "firebase" in st.secrets:
+                fb_conf = dict(st.secrets["firebase"])
+                cred = credentials.Certificate(fb_conf)
+                firebase_admin.initialize_app(cred)
+            else:
+                cred = credentials.Certificate("serviceAccountKey.json")
+                firebase_admin.initialize_app(cred)
+        except Exception as e:
+            st.error(f"Firebase Init Error: {e}")
+            return None
+    
+    # التأكد من تعريف db بعد التهيئة
+    if db is None:
+        db = firestore.client()
+    return db
 
-# 2. تشغيل دالة التهيئة
-init_firebase()
+# تشغيل التهيئة فوراً عند فتح التطبيق
+db = init_firebase()
 
 # 3. التأكد من وجود db قبل استخدامه في الدوال الأخرى
 def save_user_data(username, data):
