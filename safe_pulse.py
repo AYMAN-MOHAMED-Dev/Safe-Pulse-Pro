@@ -1,84 +1,108 @@
 import streamlit as st
 import google.generativeai as genai
+import firebase_admin
+from firebase_admin import credentials, firestore
 import os
 import json
 import base64
 import time
-import random
-import string
 import secrets
-import google.generativeai
-import random
 import bcrypt
+import random
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from streamlit_js_eval import streamlit_js_eval, get_geolocation
-import firebase_admin
-from firebase_admin import credentials, firestore
-import firebase_admin
-import re
-import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore
-import google.generativeai as genai
-import os
-import json
-import base64
-import time
-import random
 import string
-import secrets
-import bcrypt
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
-from streamlit_js_eval import streamlit_js_eval, get_geolocation
-import streamlit as st
-# ... باقي المكتبات ...
+def get_ai_response(u_input):
+    import random
+    import google.generativeai as genai
+    keys_pool = st.secrets.get("GEMINI_KEYS", [])
+    if not keys_pool: 
+        return "❌ خطأ: لم يتم العثور على مفاتيح API."
+    
+    name = st.session_state.get('current_user', 'مستخدم')
+    full_prompt = f"المستخدم اسمه {name}. أجب على هذا السؤال الطبي/الطوارئ: {u_input}"
 
-# ضيف الكود هنا
+    for attempt in range(len(keys_pool)):
+        current_key = random.choice(keys_pool)
+        try:
+            genai.configure(api_key=current_key)
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            response = model.generate_content(full_prompt)
+            return response.text
+        except Exception:
+            continue 
+    return "⚠️ جميع المفاتيح مشغولة حالياً، حاول مرة أخرى."
+
+
+def get_dynamic_key(base_name):
+    """تولد مفتاح فريد لمنع خطأ التكرار في ستريم ليت"""
+    random_id = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    return f"{base_name}_{random_id}"
+# 1. تهيئة المتغير db كـ None في البداية لتجنب NameError
+db = None
+
+def init_firebase():
+    global db
+    if not firebase_admin._apps:
+        # تأكد من أن هذا الملف موجود في نفس مجلد السكريبت
+        json_file_path = 'serviceAccountKey.json' 
+        
+        if os.path.exists(json_file_path):
+            try:
+                with open(json_file_path) as f:
+                    cert_dict = json.load(f)
+                
+                # إصلاح تنسيق المفتاح (حل مشكلة InvalidPadding)
+                if 'private_key' in cert_dict:
+                    cert_dict['private_key'] = cert_dict['private_key'].replace('\\n', '\n')
+                
+                cred = credentials.Certificate(cert_dict)
+                firebase_admin.initialize_app(cred)
+                db = firestore.client()
+                return True
+            except Exception as e:
+                st.error(f"خطأ في تهيئة Firebase: {e}")
+                return False
+        else:
+            st.error("ملف serviceAccountKey.json غير موجود!")
+            return False
+    else:
+        # إذا كان التطبيق مفعلاً مسبقاً، فقط نربط db
+        db = firestore.client()
+        return True
+
+# 2. تشغيل دالة التهيئة
+init_firebase()
+
+# 3. التأكد من وجود db قبل استخدامه في الدوال الأخرى
+def save_user_data(username, data):
+    if db is not None:
+        db.collection("users").document(username).set({"vault": data})
+    else:
+        st.error("قاعدة البيانات غير متصلة. تأكد من إعدادات Firebase.")
+# --- 3. جلب المفاتيح العامة (Keys) ---
+try:
+    if "general" in st.secrets:
+        INTERNAL_KEY = st.secrets["general"].get("internal_key")
+        GEMINI_KEY = st.secrets["general"].get("GEMINI_API_KEY")
+        encryption_key = st.secrets["general"].get("ENCRYPTION_KEY")
+    else:
+        INTERNAL_KEY = st.secrets.get("internal_key")
+        GEMINI_KEY = st.secrets.get("GEMINI_API_KEY")
+        encryption_key = st.secrets.get("ENCRYPTION_KEY")
+except Exception as e:
+    st.warning("⚠️ بعض المفاتيح العامة مفقودة في الإعدادات")
+
+# --- 4. إدارة حالة الجلسة ---
 if 'check_attempts' not in st.session_state:
     st.session_state.check_attempts = 0
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "page" not in st.session_state:
+    st.session_state.page = "HOME"
 
-# بعد كدة كمل باقي الكود بتاعك عادي
-# --- 1. الإعدادات الأساسية (يجب أن تكون في البداية تماماً) ---
-st.set_page_config(page_title="Safe Pulse Pro", layout="wide", initial_sidebar_state="collapsed")
-
-# --- 2. دالة تهيئة Firebase الموحدة ---
-import streamlit as st
-import firebase_admin
-from firebase_admin import credentials, firestore
-import os
-
-def init_fb():
-    # المسار لملف الـ JSON الذي أعدت تسميته
-    json_path = "serviceAccountKey.json"
-    
-    if not firebase_admin._apps:
-        if os.path.exists(json_path):
-            try:
-                cred = credentials.Certificate(json_path)
-                firebase_admin.initialize_app(cred)
-            except Exception as e:
-                st.error(f"حدث خطأ في قراءة ملف المفاتيح: {e}")
-                st.stop()
-        else:
-            st.error("ملف serviceAccountKey.json غير موجود في المجلد!")
-            st.stop()
-
-# تشغيل الدالة
-init_fb()
-db = firestore.client()
-
-# حل مشكلة AttributeError: st.session_state has no attribute "check_attempts"
-if "check_attempts" not in st.session_state:
-    st.session_state.check_attempts = 0
-# --- 3. التحقق من مفتاح التشفير ---
-# ملاحظة: تم إزالة استدعاء st.sidebar هنا لأنك قمت بإخفاء السايدبار في CSS لاحقاً
-# التأكد من قراءة مفتاح التشفير
-if "ENCRYPTION_KEY" in st.secrets:
-    encryption_key = st.secrets["ENCRYPTION_KEY"]
-else:
-    st.warning("مفتاح التشفير ENCRYPTION_KEY غير موجود في Secrets.")
+# كمل كود الـ CSS وباقي البرنامج من هنا...
 
 # --- 4. واجهة CSS والتصميم ---
 st.markdown("""
@@ -89,6 +113,33 @@ st.markdown("""
         [data-testid="stMainView"] { width: 100% !important; margin-left: 0px !important; }
         .stAppDeployButton {display: none !important;}
         header { visibility: hidden; }
+        /* كارت رد المسعف الذكي النيوني */
+.ai-neon-card {
+    background: #0d1117;
+    border: 2px solid #00d4ff;
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 0 15px #00d4ff, inset 0 0 10px #00d4ff;
+    animation: slide_up 0.5s ease-out;
+}
+
+.ai-title {
+    color: #00d4ff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #00d4ff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-content {
+    color: #ffffff;
+    line-height: 1.8;
+    font-size: 1rem;
+}
     </style>
 """, unsafe_allow_html=True)
 
@@ -304,22 +355,42 @@ GLOW_GREEN = f"0 0 20px {GREEN_NEON}" if vault.get('neon', True) else "none"
 DIR = "rtl" if st.session_state.lang == "AR" else "ltr"
 background = "#0d1117"
 
+# --- 6. التصميم و CSS المحدث ---
 st.markdown(f"""
 <style>
     {font_face}
     html, body, [data-testid="stAppViewContainer"] {{ background-color: #010409; color: white; direction: {DIR}; }}
-    .stButton>button {{ background: #0d1117 !important; border: 2px solid {BLUE} !important; color: white !important; 
-                        border-radius: 12px; height: 50px; box-shadow: {GLOW}; transition: 0.4s; width: 100%; font-size: 18px; }}
+    
+    /* تعديل الأزرار لتكون أكبر وتستوعب النص بشكل أفضل */
+    .stButton>button {{ 
+        background: #0d1117 !important; 
+        border: 2px solid {BLUE} !important; 
+        color: white !important; 
+        border-radius: 12px; 
+        
+        /* زيادة الارتفاع والمسافات */
+        height: 65px !important;  /* تم زيادة الارتفاع من 50 إلى 65 */
+        padding: 10px 5px !important; 
+        
+        box-shadow: {GLOW}; 
+        transition: 0.4s; 
+        width: 120%; 
+        
+        /* ضبط الخط ليتناسب مع حجم الزر الجديد */
+        font-size: 20px !important; 
+        font-weight: bold !important;
+        line-height: 1.2 !important; /* لضمان توسط الكلام عمودياً */
+        overflow: hidden; /* لمنع خروج النص */
+    }}
+
+    .stButton>button:hover {{
+        transform: scale(1.02);
+        box-shadow: 0 0 30px {BLUE};
+    }}
+
+    /* بقية التنسيقات كما هي */
     .neon-card {{ background: #0d1117; border: 2px solid {BLUE}; border-radius: 15px; padding: 20px 10px; margin-bottom: 12px; text-align: center; box-shadow: {GLOW}; line-height: 1.6; min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; }}
     .neon-card-green {{ background: #0d1117; border: 2px solid {GREEN_NEON}; border-radius: 15px; padding: 20px 10px; margin-bottom: 12px; text-align: center; box-shadow: {GLOW_GREEN}; line-height: 1.6; min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; }}
-    .aid-box {{ background: rgba(0, 212, 255, 0.05); border: 1px solid {BLUE}; padding: 15px; border-radius: 15px; margin-bottom: 20px; box-shadow: {GLOW}; }}
-    .aid-img {{ width: 120px; height: 120px; object-fit: contain; border-radius: 15px; filter: drop-shadow({GLOW}); margin-bottom: 10px; }}
-    .welcome-text {{ font-size: 1.5rem; color: white; margin-bottom: 10px; text-align: center; }}
-    .neon-user {{ color: {BLUE}; text-shadow: {GLOW}; font-weight: bold; }}
-    .ai-response-box {{ background: #0d1117; border: 1px solid #00f2fe; padding: 15px; border-radius: 12px; box-shadow: inset 0 0 10px #00f2fe; color: white; margin-top: 10px; line-height: 1.6; }}
-    .main-neon-card {{ background: rgba(0, 0, 0, 0.3); border: 2px solid {BLUE}; border-radius: 20px; padding: 20px; box-shadow: {GLOW}; margin-bottom: 20px; }}
-    .neon-text-item {{ color: #FFFFFF !important; font-size: 1.1rem; padding: 12px 0; border-bottom: 1px solid rgba(0, 212, 255, 0.1); text-shadow: 0 0 8px {BLUE}; font-weight: 500; }}
-    .note-time {{ color: {BLUE}; font-size: 0.8rem; margin-left: 15px; text-shadow: none; }}
     header {{ visibility: hidden; }}
 </style>
 """, unsafe_allow_html=True)
@@ -327,51 +398,84 @@ st.markdown(f"""
 # --- 7. واجهة تسجيل الدخول ---
 
 if not st.session_state.authenticated:
+    # --- 1. قسم التنسيق (Neon Style) ---
+    st.markdown(f"""
+    <style>
+        div[data-testid="stTextInput"] input {{
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #00d4ff !important;
+            border-radius: 10px !important;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3) !important;
+        }}
+        div.stButton > button {{
+            background-color: #000000 !important;
+            color: #00d4ff !important;
+            border: 2px solid #00d4ff !important;
+            border-radius: 20px !important;
+            text-shadow: 0 0 5px #00d4ff !important;
+            box-shadow: 0 0 10px #00d4ff !important;
+            width: 100%;
+        }}
+        .footer-signature {{
+            text-align: center;
+            color: #00d4ff;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00d4ff;
+            padding: 20px;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    # --- 2. اللوجو والترحيب ---
     logo_data = get_64("assets/icons/icon.png")
-    st.markdown(f'<div style="text-align:center; padding-top:30px;"><img src="data:image/png;base64,{logo_data}" style="width:180px; filter:drop-shadow({GLOW});"><h1 style="color:{BLUE}; font-size:2.8rem; text-shadow:{GLOW};">Safe Pulse PRO</h1></div>', unsafe_allow_html=True)
-    
-    # إضافة ميزة الاسترداد الأوفلاين في صفحة الدخول
-    with st.sidebar:
-        st.header("🔑 استرداد البيانات (Offline)")
-        uploaded_backup = st.file_uploader("ارفع ملف الـ .dat الخاص بك للقراءة", type=['dat'], key="login_recovery")
-        if uploaded_backup:
-            try:
-                recovered_data = json.loads(cipher.decrypt(uploaded_backup.read()).decode())
-                st.session_state['temp_recovered_data'] = recovered_data
-                st.success("تم قراءة الملف بنجاح!")
-            except: st.error("فشل قراءة الملف")
+    st.markdown(f"""
+        <div style="text-align:center; padding-top:30px;">
+            <img src="data:image/png;base64,{logo_data}" style="width:180px;">
+            <h1 style="color:#00d4ff; font-size:2.8rem; text-shadow:0 0 10px #00d4ff;">Safe Pulse PRO</h1>
+            <h2 style="color:white; font-size:2.8rem; text-shadow:0 0 6px white;">نبض الآمان</h2>
+            <h3 style="color:white; text-shadow: 0 0 10px #00d4ff;">مرحباً بك</h3>
+            <p style="color:#e6edf3; opacity:0.9;">أمانك الطبي، حمايتك من السرقة، والاستغاثة.. في مكان واحد</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     tab_login, tab_setup = st.tabs(["🔐 تسجيل الدخول", "✨ إنشاء حساب جديد"])
+    
     with tab_login:
-        in_user = st.text_input(L["login_user"], key="l_user")
-        in_pass = st.text_input(L["login_pass"], type="password", key="l_pass")
-        if st.button(L["login_btn"]):
+        in_user = st.text_input("اسم المستخدم", key="l_user")
+        in_pass = st.text_input("كلمة المرور", type="password", key="l_pass")
+        
+        if st.button("تسجيل الدخول"):
             reg = get_registry()
             if in_user in reg:
-                # جلب الباسورد المشفر المخزن وتحويله لـ bytes
                 stored_hash = reg[in_user].encode('utf-8')
-                
-                # التحقق باستخدام bcrypt
-                if bcrypt.checkpw(in_pass.encode('utf-8'), stored_hash):
-                    token = create_session(in_user)
-                    st.session_state.current_user = in_user
-                    # تحميل البيانات من Firestore
-                    st.session_state.secure_vault = load_user_data(in_user) or get_user_defaults(in_user)
-                    st.session_state.authenticated = True
-                    st.session_state.page = "HOME"
-                    
-                    # حفظ التوكن في المتصفح لاستعادة الجلسة
-                    streamlit_js_eval(
-                        js_expressions=f"localStorage.setItem('sp_token', '{token}')",
-                        key="set_token_final"
-                    )
-                    st.success("✅ أهلاً بك مجدداً!")
-                    time.sleep(0.5)
-                    st.rerun()
-                else:
-                    st.error("❌ كلمة المرور غير صحيحة")
+                try:
+                    if bcrypt.checkpw(in_pass.encode('utf-8'), stored_hash):
+                        token = create_session(in_user)
+                        st.session_state.current_user = in_user
+                        st.session_state.secure_vault = load_user_data(in_user) or get_user_defaults(in_user)
+                        st.session_state.authenticated = True
+                        st.session_state.page = "HOME"
+                        streamlit_js_eval(js_expressions=f"localStorage.setItem('sp_token', '{token}')")
+                        st.rerun()
+                    else:
+                        st.error("❌ كلمة المرور غير صحيحة")
+                except ValueError:
+                    st.error("⚠️ خطأ في تشفير الحساب القديم. يرجى مسح ملف registry وإنشاء حساب جديد.")
             else:
-                st.error("❌ مستخدم غير موجود")
+                st.error("❌ المستخدم غير موجود")
+
+    with tab_setup:
+        new_user = st.text_input("اسم المستخدم الجديد", key="s_user")
+        new_pass = st.text_input("كلمة المرور الجديدة", type="password", key="s_pass")
+        if st.button("إنشاء حساب"):
+            if new_user and new_pass:
+                save_to_registry(new_user, new_pass)
+                save_user_data(new_user, get_user_defaults(new_user))
+                st.success("✨ تم إنشاء الحساب بنجاح!")
+
+    st.markdown('<div class="footer-signature">Ayman Dev</div>', unsafe_allow_html=True)
+    st.stop()
     
     with tab_setup:
         st.subheader(L["setup_h"])
@@ -407,30 +511,56 @@ if not st.session_state.authenticated:
 
 # --- 8. محتوى البرنامج (بعد الدخول) ---
 
+# --- 1. عرض اللوجو والعناوين (المدمج) ---
 logo_data = get_64("assets/icons/icon.png")
-st.markdown(f'<div style="text-align:center;"><img src="data:image/png;base64,{logo_data}" style="width:110px; filter:drop-shadow({GLOW});"><h2 style="color:{BLUE}; text-shadow:{GLOW}; font-size:2rem;">Safe Pulse PRO</h2></div>', unsafe_allow_html=True)
 
+# دمج اللوجو مع النص الإنجليزي (أزرق) والنص العربي (أبيض) في بلوك واحد
+st.markdown(f"""
+    <div style="text-align:center; margin-bottom: 20px;">
+        <img src="data:image/png;base64,{logo_data}" style="width:110px; filter:drop-shadow({GLOW});">
+        <h2 style="color:{BLUE}; text-shadow:{GLOW}; font-size:2rem; margin-bottom: 0px;">
+            Safe Pulse PRO
+        </h2>
+        <h2 style="color:white; font-size:2.2rem; text-shadow:0 0 6px white; margin-top: -8px;">
+            نبض الآمان
+        </h2>
+    </div>
+""", unsafe_allow_html=True)
+
+# --- 2. شريط التنقل (Navigation Bar) ---
 nav_keys = ["HOME", "AID", "AI", "SET", "ABOUT", "LANG"]
 n_cols = st.columns(len(L["nav"]) + 1)
+
 for idx, label in enumerate(L["nav"]):
     if n_cols[idx].button(label, key=f"nav_{idx}"):
         if nav_keys[idx] == "LANG":
             st.session_state.lang = "EN" if st.session_state.lang == "AR" else "AR"
             vault["lang"] = st.session_state.lang
-            save_user_data(st.session_state.current_user, vault); st.rerun()
-        else: st.session_state.page = nav_keys[idx]; st.rerun()
+            save_user_data(st.session_state.current_user, vault)
+            st.rerun()
+        else:
+            st.session_state.page = nav_keys[idx]
+            st.rerun()
 
-if n_cols[-1].button(L["logout"]):
-    streamlit_js_eval(js_expressions="localStorage.removeItem('sp_token')", key="remove_token_final")
+# زر تسجيل الخروج
+if n_cols[-1].button(L["logout"], key="logout_final_btn"):
+    # لا تضع أي كود خارج هذا الشرط لكي لا يعمل عند الريفريش
     st.session_state.authenticated = False
     st.session_state.current_user = ""
+    # إذا كنت تستخدم التوكين، امسحه هنا فقط
+    try:
+        streamlit_js_eval(js_expressions="localStorage.removeItem('sp_token')")
+    except:
+        pass
     st.rerun()
+
+
 
 st.divider()
 page = st.session_state.page
 
 if page == "HOME":
-    # 1. تعريف نظام التحريك الاحترافي (Animations)
+    # 1. تعريف نظام التحريك الاحترافي وتكبير العناصر
     st.markdown(f"""
         <style>
             /* تحريك اللوجو: نبض مع إشعاع نيون */
@@ -443,8 +573,8 @@ if page == "HOME":
                 animation: logo_pulse 3s infinite ease-in-out;
                 display: block;
                 margin: auto;
-                width: 120px;
-                margin-bottom: 20px;
+                width: 150px; /* تم تكبير اللوجو قليلاً */
+                margin-bottom: 30px;
             }}
 
             /* تحريك العناصر عند دخول الصفحة */
@@ -452,18 +582,38 @@ if page == "HOME":
                 from {{ opacity: 0; transform: translateY(20px); }}
                 to {{ opacity: 1; transform: translateY(0); }}
             }}
-            .stButton, .neon-card, .neon-card-green {{
+
+            /* تكبير الأزرار الافتراضية لـ Streamlit */
+            div.stButton > button {{
+                width: 120% !important;
+                height: 60px !important;         /* زيادة الارتفاع */
+                font-size: 25px !important;      /* تكبير الخط */
+                font-weight: bold !important;
+                border-radius: 15px !important;
                 animation: slide_up 0.6s ease-out forwards;
+                transition: 0.3s all ease-in-out !important;
+            }}
+
+            /* تكبير بطاقات النيون المخصصة (Neon Cards) */
+            .neon-card, .neon-card-green {{
+                animation: slide_up 0.6s ease-out forwards;
+                padding: 10px !important;        /* زيادة المساحة الداخلية */
+                min-height: 30px !important;    /* تحديد أقل ارتفاع للبطاقة */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 25px !important;      /* تكبير النص داخل البطاقة */
+                text-align: center;
+                border-radius: 30px !important;  /* حواف أكثر انحناءً */
+                transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+                cursor: pointer;
+                margin-bottom: 15px;
             }}
 
             /* تأثير التفاعل عند تمرير الماوس (Hover) */
-            .neon-card, .neon-card-green {{
-                transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-                cursor: pointer;
-            }}
-            .neon-card:hover, .neon-card-green:hover {{
-                transform: scale(1.08) !important;
-                box-shadow: 0 0 30px {BLUE} !important;
+            .neon-card:hover, .neon-card-green:hover, div.stButton > button:hover {{
+                transform: scale(1.05) !important;
+                box-shadow: 0 0 40px {BLUE} !important;
                 filter: brightness(1.2);
             }}
         </style>
@@ -535,40 +685,70 @@ if page == "HOME":
     with s2: st.markdown(f'<a href="tel:123" style="text-decoration:none;"><div class="neon-card" style="border-color:#ff4b4b; color:#ff4b4b;">🚑<br>{L["a"]}</div></a>', unsafe_allow_html=True)
     with s3: st.markdown(f'<a href="tel:180" style="text-decoration:none;"><div class="neon-card">🚒<br>{L["f"]}</div></a>', unsafe_allow_html=True)
     with s4: st.markdown(f'<a href="tel:129" style="text-decoration:none;"><div class="neon-card">🔥<br>{L["g"]}</div></a>', unsafe_allow_html=True)
-elif page == "AI":
-    st.header("🤖 " + L["nav"][2])
-    def get_ai_response(u_input):
-        keys_pool = st.secrets.get("GEMINI_KEYS", [])
-        if not keys_pool: return "❌ خطأ: لم يتم العثور على قائمة المفاتيح في Secrets."
-        
-        # إضافة نداء الاسم في التعليمات الخفية للموديل
-        name = st.session_state.current_user
-        full_prompt = f"المستخدم اسمه {name}. أجب على هذا السؤال الطبي/الطوارئ وقم بمناداته باسمه بطريقة مهذبة في بداية أو نهاية الرد: {u_input}"
+# كود عرض رد المسعف الذكي داخل الكارت النيوني
+# 1. تهيئة المتغير لتجنب الخطأ الظاهر في الصورة الثانية
+# 1. تهيئة حالة الجلسة للرد إذا لم تكن موجودة
+# 1. تهيئة حالة الجلسة (توضع في بداية قسم الذكاء الاصطناعي)
+# 1. تأكد من وضع هذه التهيئة في بداية كود صفحة الـ AI
+# 1. تأكد من وضع هذه التهيئة في بداية كود صفحة الـ AI
+# تهيئة حالة الجلسة للرد (توضع في بداية قسم AI)
+if "ai_result" not in st.session_state:
+    st.session_state.ai_result = None
 
-        for attempt in range(len(keys_pool)):
-            current_key = random.choice(keys_pool)
-            try:
-                genai.configure(api_key=current_key)
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                response = model.generate_content(full_prompt)
-                return response.text
-            except Exception as e:
-                if "429" in str(e) or "exhausted" in str(e):
-                    time.sleep(1)
-                    continue 
-                return f"❌ خطأ فني: {str(e)}"
-        return "⚠️ جميع المفاتيح مشغولة حالياً."
+if st.session_state.page == "AI":
+    # --- كود التنسيق النيون المطور لمربع البحث ---
+    st.markdown(f"""
+    <style>
+        /* تنسيق مربع النص باللون الرصاصي النيون والحواف السوداء اللامعة */
+        div[data-testid="stTextArea"] textarea {{
+            background-color: #1c1f26 !important; /* رصاصي نيون داكن */
+            color: #ffffff !important;
+            border: 2px solid #000000 !important; /* حواف سوداء */
+            border-radius: 15px !important;
+            padding: 15px !important;
+            /* توهج أسود لامع مع لمسة نيون أزرق */
+            box-shadow: 0 0 10px #000000, 0 0 5px #00d4ff !important; 
+            transition: 0.4s all ease-in-out;
+        }}
 
-    u_input = st.text_area(L["ai_label"], height=150, key="ai_final_input")
-    if st.button(L["ai_btn"], key="ai_final_btn"):
-        if u_input:
-            with st.spinner("جاري استشارة المسعف الذكي..."):
-                result = get_ai_response(u_input)
-                st.markdown(f"<div class='ai-response-box'>{result}</div>", unsafe_allow_html=True)
-                vault["ai_chat_history"].append({"time": datetime.now().strftime("%H:%M"), "q": u_input, "a": result})
-                save_user_data(st.session_state.current_user, vault)
+        /* تأثير التوهج عند التركيز */
+        div[data-testid="stTextArea"] textarea:focus {{
+            border-color: #00d4ff !important;
+            box-shadow: 0 0 20px #00d4ff !important;
+            outline: none !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
 
+    st.markdown(f'<h1 style="text-align:center; color:#00d4ff; text-shadow:0 0 10px #00d4ff;">الذكاء الاصطناعي 🤖</h1>', unsafe_allow_html=True)
+    
+    # مربع الإدخال (تأكد من استخدام مفتاح ثابت لمنع تكرار العناصر)
+    u_input_final = st.text_area(L["ai_label"], height=150, key="fixed_neon_ai_input") 
+    
+    # حل مشكلة المسافات البادئة (Indentation) 
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        if st.button(L["ai_btn"], key="fixed_neon_ai_button"):
+            if u_input_final:
+                with st.spinner("جاري استشارة المسعف الذكي..."):
+                    result = get_ai_response(u_input_final)
+                    st.session_state.ai_result = result
+            else:
+                st.warning("يرجى كتابة سؤالك أولاً.")
+    
+    with col2:
+        if st.button("مسح 🗑️", key="clear_ai_fixed"):
+            st.session_state.ai_result = None
+            st.rerun()
 
+    # عرض النتيجة داخل الكارت النيوني (يظهر كارت واحد فقط)
+    if st.session_state.ai_result:
+        st.markdown(f"""
+        <div class="ai-neon-card">
+            <div style="color:#00d4ff; font-weight:bold; margin-bottom:10px;">🤖 المسعف الذكي:</div>
+            <div style="color:white; line-height:1.7;">{st.session_state.ai_result}</div>
+        </div>
+        """, unsafe_allow_html=True)
 elif page == "AID":
     lang = st.session_state.lang
     title_text = "🚑 الإسعافات الأولية" if lang == "AR" else "🚑 First Aid Guide"
@@ -692,93 +872,214 @@ elif page == "AID":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "CHAT":
-    # 1. تصميم نيون مخصص وتحويل السهم إلى زر نصي "تحدث"
+    # 1. جلب الرسائل من الـ Vault لضمان الاستمرارية وعدم الحذف
+    if "messages" not in st.session_state:
+        st.session_state.messages = st.session_state.secure_vault.get("chat_history", [])
+
+    # قائمة الـ 100 مقولة كاملة
+    quotes = [
+        "فشل علاقة لا يعني فشلك كإنسان، بل يعني أن هذا الفصل من حياتك قد انتهى لتبدأ فصلاً أجمل.",
+        "القلب الذي ينكسر، يلتئم ليصبح أقوى في مواجهة الخيبات القادمة.",
+        "من لا يعرف قيمتك وأنت معه، سيعرفها جيداً حين يراك تمضي بدونه.",
+        "لا تعتذر أبداً عن صدق مشاعرك، العيب فيمن لم يمتلك وعاءً كافياً لاحتوائها.",
+        "أحياناً يكسر الله قلبك لينقذ روحك من علاقة كانت ستدمرك تماماً.",
+        "الرحيل بكرامة هو انتصار عظيم لن تشعر بلذته إلا بعد حين.",
+        "أنت تستحق شخصاً يحارب ليحميك، لا شخصاً تحارب أنت لتبقى في حياته.",
+        "الحب لا يعني التضحية بكرامتك، فمن يحبك حقاً سيعزز كرامتك لا يهينها.",
+        "لا تجعل خيبة واحدة تحول قلبك إلى حجر، فالعالم لا يزال مليئاً بالأوفياء.",
+        "الوحدة أجمل بكثير من رفقة تجعلك تشعر أنك وحيد وأنت معهم.",
+        "تعلم فن الاستغناء، فليس كل من دخل حياتك جاء ليبقى.",
+        "النهايات هي في الحقيقة بدايات متنكرة، استعد لما هو قادم.",
+        "لا تبكِ على من باعك، بل اشكر الله لأنه كشف لك الحقيقة قبل فوات الأوان.",
+        "قيمتك لا يحددها رأي شخص فيك، بل يحددها تقديرك أنت لنفسك.",
+        "الشفاء من علاقة سامة يبدأ بقرارك أنك لن تعود ضحية مرة أخرى.",
+        "أعطِ نفسك وقتاً للحداد على ما مضى، ثم انهض كأنك لم تسقط أبداً.",
+        "القلب الذي يمنح الفرص كثيراً، يرحل مرة واحدة دون عودة.",
+        "أنت لست خياراً ثانياً لأحد، إما أن تكون الأول أو لا تكون.",
+        "الخروج من علاقة مؤذية هو ولادة جديدة لروحك.",
+        "لا تندم على معروف قدمته، فالنوايا الطيبة لا تضيع عند الله.",
+        "النسيان ليس نسيان الأحداث، بل نسيان الشعور الذي خلفته تلك الأحداث.",
+        "أحياناً نحتاج لفقدان أحدهم لكي نجد أنفسنا الضائعة.",
+        "الحياة قصيرة جداً لتقضيها في انتظار من لا ينتظرك.",
+        "كن كالنور، من أرادك سيسعى إليك، ومن فقدك سيعيش في الظلام.",
+        "الحب الحقيقي يبني ولا يهدم، يرمم ولا يكسر.",
+        "لا تقارن بدايتك بنهاية غيرك، لكل شخص مسار وقصة مختلفة.",
+        "الثقة التي تُكسر لا تُرمم، لكنها تعلمك كيف تختار بعناية في المرة القادمة.",
+        "سامح لترتاح أنت، وليس لأنهم يستحقون السماح.",
+        "الكرامة هي الخط الأحمر الذي لا يجب أن يتخطاه أي حب في العالم.",
+        "لا تستجدي الاهتمام، فالأشياء الجميلة تُمنح ولا تُطلب.",
+        "من يحبك سيهتم بكسرك، ومن يهواك سيزيدك انكساراً.",
+        "القوة ليست في عدم السقوط، بل في النهوض بعد كل سقطة.",
+        "اكتفِ بنفسك، فالاعتماد العاطفي هو سجن لروحك.",
+        "الحياة ستستمر بك أو بدونهم، فاختر أن تستمر وأنت شامخ.",
+        "كل وجع مررت به هو درس صامت يجعلك أكثر حكمة.",
+        "ضعف جسدك اليوم هو نداء لروحك لترتاح، فلا تقسُ على نفسك.",
+        "المرض ليس نهاية الطريق، بل هو محطة لتتعلم الامتنان لأبسط النعم.",
+        "صحتك هي استثمارك الأغلى، لا بأس أن تتوقف قليلاً لترمم جسدك.",
+        "كل ألم تشعر به الآن هو زكاة لجسدك، ورفعة لدرجاتك.",
+        "القوة النفسية قادرة على هزيمة أعتى الأمراض الجسدية.",
+        "لا تحزن على عجز مؤقت، فالقمر يمر بمراحل المحاق قبل أن يكتمل نوراً.",
+        "جسدك يحتاج لصبرك كما يحتاج للدواء، كن رحيماً به.",
+        "الإرادة هي نصف العلاج، والتفاؤل هو النصف الآخر.",
+        "الصحة تاج لا يراه إلا من مر بلحظات الضعف، حافظ على تاجك.",
+        "أنت قوي بما يكفي لتجاوز هذه الوعكة، غداً ستكون ذكرى.",
+        "التعافي رحلة وليس سباقاً، خذ وقتك بالكامل.",
+        "لا تسمح للمرض أن يسرق بريق عينيك، الأمل دواء لا يُباع في الصيدليات.",
+        "حتى في ذروة تعبك، تذكر أن هناك من ينتظر نهوضك بفارغ الصبر.",
+        "جسدك هو منزلك الوحيد، اعتنِ به بالحب والهدوء.",
+        "المرض يختبر معادن الناس من حولك، ويصقل معدنك أنت.",
+        "كل يوم تشرق فيه الشمس هو فرصة جديدة لتعافي أفضل.",
+        "لا تقلق، فالذي خلق الداء خلق الدواء، والثقة بالله هي الشفاء.",
+        "استمتع بلحظات الهدوء، فالسكينة هي بيئة التعافي المثالية.",
+        "أنت لست تشخيصاً طبياً، أنت روح عظيمة تقاوم ببطولة.",
+        "الصبر على الألم هو أعلى مراتب الشجاعة.",
+        "اعتبر فترة مرضك خلوة مع الله وإعادة ترتيب لأولوياتك.",
+        "ابتسامتك في وجه الألم هي نصف الانتصار عليه.",
+        "لا تنظر إلى ما فقدت صحياً، انظر إلى القوة التي اكتسبتها داخلياً.",
+        "الغد يحمل لك صحة أفضل وصباحاً أجمل، كن مؤمناً بذلك.",
+        "حتى الشجر يسقط ورقه ليعود مخضراً من جديد، وكذلك أنت.",
+        "الضعف الجسدي ليس عيباً، بل هو طبيعة البشر، القوة هي في روحك.",
+        "كل جرعة دواء هي خطوة نحو العافية، وكل دعاء هو تقصير للمسافة.",
+        "كن ممتناً لكل خلية في جسدك تعمل الآن لأجلك.",
+        "لا تيأس، فالمعجزات تحدث لأولئك الذين لا يتوقفون عن المحاولة.",
+        "راحتك النفسية هي المحرك الأول لتعافي جسدك.",
+        "اجعل من ألمك وقوداً لإبداعك، فالكثير من العظماء خرجوا من رحم الوجع.",
+        "نفسك تستحق منك الدلال والاهتمام، خاصة في أوقات الضعف.",
+        "تذكر أن الشدة لا تدوم، والعافية قادمة كفلق الصبح.",
+        "أنت محارب، والمحاربون لا يستسلمون من المعركة الأولى.",
+        "جسدك سيشكرك يوماً ما لأنك لم تستسلم في هذه اللحظة.",
+        "عوض الله لا يأتي عادياً، بل يأتي ليُنسيك مرارة كل ما فقدت.",
+        "ما ذهب منك لم يكن لك من البداية، وما هو لك لن يذهب لغيرك.",
+        "الفقد موجع، لكنه يفتح في روحك مساحات لن يملأها إلا الله.",
+        "عندما يأخذ الله منك شيئاً، فإنه يهيئ يديك لاستقبال شيء أعظم.",
+        "الجبر قادم، وبطريقة لم تخطر على بالك أبداً.",
+        "لا تبكِ على أطلال الماضي، فالمستقبل يبني لك قصوراً من العوض.",
+        "خسارة الأشياء المادية هي أرخص أنواع الخسائر، طالما روحك بخير.",
+        "أحياناً يرحل الجميل ليأتي الأجمل، ثق في تدبير الخالق.",
+        "كل باب أُغلق في وجهك كان يحميك من شر لا تراه.",
+        "الفقد يعلمنا قيمة اللحظة، والتعويض يعلمنا قيمة الصبر.",
+        "سيعوضك الله حتى تظن أنك لم تحزن يوماً.",
+        "الصبر على الفقد هو عبادة صامتة أجرها بغير حساب.",
+        "الغياب ليس دائماً خسارة، أحياناً يكون نجاة.",
+        "من فقد غاليًا، سيرزقه الله أنيساً يملأ قلبه طمأنينة.",
+        "الحياة دولاب، اليوم فقد وغداً وجد، والرضا هو المكسب الحقيقي.",
+        "لا تحزن على ما فات، فلو كان خيراً لبقي.",
+        "العوض الحقيقي هو أن يرزقك الله راحة البال بعد شتات الروح.",
+        "الفقد يكسرنا، لكن جبر الله يعيد تشكيلنا لنصبح أجمل.",
+        "سيمسح الله على قلبك بلطفه حتى تبتسم رغماً عن كل شيء.",
+        "كل دمعة سقطت منك في الخفاء، لها عوض كبير في العلن.",
+        "استبشر خيراً، فالأقدار تخبئ لك ما يقر عينك.",
+        "الفراغ الذي تركه الراحلون، سيملؤه الله بنور السكينة.",
+        "لست وحدك، فالله معك في كل لحظة انكسار وفقد.",
+        "العوض ليس دائماً شخصاً آخر، قد يكون سلاماً داخلياً لا يُقدّر بثمن.",
+        "ما كان لك سيأتيك على ضعفك، وما ليس لك لن تناله بقوتك.",
+        "أنت تسير في رعاية الله، فلا تخف من ضياع شيء.",
+        "جبر القلوب من شيم العظماء، والله هو أعظم الجابرين.",
+        "ابتسم، فعوض الله مدهش لدرجة تفوق الخيال.",
+        "نهاية القصة دائماً سعيدة، إذا لم تكن سعيدة فهي ليست النهاية بعد.",
+        "Safe Pulse PRO يذكرك دائماً: أنت تستحق الأفضل، والتعافي يبدأ من الداخل."
+    ]
+
+    # 2. قسم النيون الشامل (CSS) - عودة الهوية البصرية كاملة
     st.markdown(f"""
         <style>
-            /* إخفاء أيقونات المستخدم والمساعد */
-            [data-testid="stChatMessageAvatarUser"], 
-            [data-testid="stChatMessageAvatarAssistant"] {{
-                display: none !important;
-            }}
+            /* إخفاء الأيقونات الافتراضية */
+            [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] {{ display: none !important; }}
             
-            [data-testid="stChatMessageContent"] {{
-                margin-left: 0px !important;
-            }}
-
-            /* خلفية منطقة الشات */
-            .stChatFloatingInputContainer {{
-                background-color: rgba(0, 0, 0, 0) !important;
-            }}
-            
-            /* تصميم صندوق الإدخال نيون */
+            /* نيون لصندوق إدخال الشات */
             .stChatInput {{
-                border: 1px solid {BLUE} !important;
+                border: 2px solid {BLUE} !important;
                 border-radius: 25px !important;
                 box-shadow: 0 0 15px {BLUE} !important;
-                background: rgba(10, 10, 10, 0.9) !important;
+                background: #000 !important;
             }}
 
-            /* تحويل سهم الإرسال إلى زر "تحدث" نيون */
-            button[data-testid="stChatInputSubmit"] {{
-                background-color: white !important;
-                border: 2px solid {BLUE} !important;
-                box-shadow: 0 0 10px white, 0 0 20px {BLUE} !important;
-                border-radius: 15px !important;
-                width: 80px !important; /* عرض أكبر لاستيعاب النص */
-                height: 35px !important;
-                transition: all 0.3s ease !important;
-                position: relative !important;
-            }}
-
-            /* إخفاء أيقونة السهم الأصلية */
-            button[data-testid="stChatInputSubmit"] svg {{
-                display: none !important;
-            }}
-
-            /* إضافة كلمة "تحدث" داخل الزر */
-            button[data-testid="stChatInputSubmit"]::after {{
-                content: "تحدث";
-                color: {BLUE};
-                font-weight: bold;
-                font-size: 14px;
-                display: block;
-            }}
-
-            button[data-testid="stChatInputSubmit"]:hover {{
-                transform: scale(1.05) !important;
-                box-shadow: 0 0 15px white, 0 0 30px {BLUE} !important;
-                filter: brightness(1.2);
-            }}
-
-            /* فقاعات الشات نيون */
+            /* نيون لفقاعات الرسائل */
             [data-testid="stChatMessage"] {{
-                background: rgba(0, 255, 255, 0.03) !important;
-                border: 1px solid rgba(0, 255, 255, 0.15) !important;
+                background-color: rgba(0, 0, 0, 0.7) !important;
+                border: 1px solid {BLUE} !important;
+                box-shadow: 0 0 10px {BLUE} !important;
+                border-radius: 15px !important;
+                margin-bottom: 10px !important;
+                color: white !important;
+            }}
+
+            /* زر دعم نفسي نيون (فوشيا) */
+            div.stButton > button[key="psych_btn"] {{
+                background-color: #000 !important;
+                color: #FF007F !important;
+                border: 2px solid #FF007F !important;
+                box-shadow: 0 0 15px #FF007F !important;
                 border-radius: 20px !important;
-                margin-bottom: 12px !important;
+                width: 100% !important;
+                font-weight: bold !important;
+                text-shadow: 0 0 5px #FF007F !important;
+            }}
+
+            /* كارت المقولة المضيء */
+            .quote-card {{
+                background-color: #000;
+                border: 2px solid #FF007F;
+                padding: 25px;
+                border-radius: 15px;
+                text-align: center;
+                color: white;
+                text-shadow: 0 0 10px #FF007F;
+                box-shadow: 0 0 20px #FF007F, inset 0 0 10px #FF007F;
+                margin-bottom: 25px;
+                font-size: 1.2rem;
             }}
         </style>
     """, unsafe_allow_html=True)
 
-    # 2. عنوان الشات
-    st.markdown(f'<h2 style="text-align:center; color:{BLUE}; text-shadow: 0 0 20px {BLUE};">✨ مفكرتك الذكية</h2>', unsafe_allow_html=True)
-    
-    # 3. نظام الشات
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    # 3. محتوى الصفحة
+    st.markdown(f'<h1 style="text-align:center; color:{BLUE}; text-shadow:0 0 20px {BLUE};">✨ مفكرتك الذكية</h1>', unsafe_allow_html=True)
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    # --- 1. إضافة أزرار التحكم بالسجل (تأكد من وضع هذا الجزء هنا) ---
+    st.markdown("### 🛠️ إدارة السجل")
+    col_manage1, col_manage2 = st.columns(2)
 
+    with col_manage1:
+        # خيار الإخفاء/العرض باستخدام زر تبديل
+        show_history = st.toggle("إظهار سجل المحادثات", value=True, key="toggle_history")
+
+    with col_manage2:
+        # زر الحذف النهائي
+        if st.button("🗑️ مسح السجل نهائياً", key="clear_vault_btn"):
+            st.session_state.messages = []
+            st.session_state.secure_vault["chat_history"] = []
+            # استدعاء دالة الحفظ الخاصة بك لضمان المسح من قاعدة البيانات
+            save_user_data(st.session_state.current_user, st.session_state.secure_vault)
+            st.success("تم الحذف بنجاح!")
+            st.rerun()
+
+    # --- 2. زر الدعم النفسي ---
+    if st.button("💖 دعم نفسي", key="psych_btn"):
+        import random
+        selected = random.choice(quotes)
+        st.markdown(f'<div class="quote-card">{selected}</div>', unsafe_allow_html=True)
+
+    # --- 3. عرض الرسائل السابقة (مرتبط بحالة زر الإخفاء) ---
+    if show_history:
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+    else:
+        st.info("سجل المحادثات مخفي الآن.")
+
+    # --- 4. معالجة الإدخال الجديد ---
     if prompt := st.chat_input("اكتب فكرة جديدة..."):
+        # إضافة الرسالة محلياً
         st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # حفظ الرسالة في الـ Vault بشكل دائم
+        st.session_state.secure_vault["chat_history"] = st.session_state.messages
+        save_user_data(st.session_state.current_user, st.session_state.secure_vault)
+        
+        # إعادة التشغيل لضمان التحديث
         st.rerun()
 
-    st.write("---")
-    if st.button("⬅️ العودة للرئيسية"):
-        st.session_state.page = "HOME"
-        st.rerun()
+    # زر الرجوع للرئيسية (اختياري)
 elif page == "SET":
     # 1. إعدادات CSS النيون الشاملة لجميع العناصر
     st.markdown(f"""
@@ -1043,7 +1344,44 @@ elif page == "ABOUT":
                     {feat_html}
                 </div>
             """, unsafe_allow_html=True)
+    st.markdown(f'<h1 style="text-align:center; color:{BLUE};"></h1>', unsafe_allow_html=True)
+    
+    st.write("برنامج Safe Pulse PRO هو رفيقك الذكي للسلامة والإسعافات الأولية.")
 
+    # --- كود زر الواتساب ---
+    whatsapp_number = "201153897231"
+    whatsapp_url = f"https://wa.me/{whatsapp_number}"
+
+    st.markdown(f"""
+    <style>
+    .whatsapp-btn {{
+        background-color: #25D366;
+        color: white !important;
+        padding: 15px 25px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 50px;
+        box-shadow: 0 0 15px #25D366;
+        transition: 0.3s;
+        border: none;
+        cursor: pointer;
+        margin: 20px auto;
+        display: block;
+        width: fit-content;
+    }}
+    .whatsapp-btn:hover {{
+        box-shadow: 0 0 30px #25D366;
+        transform: scale(1.05);
+    }}
+    </style>
+    
+    <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">
+        💬 تواصل مع المبرمج عبر واتساب
+    </a>
+    """, unsafe_allow_html=True)
     # قسم الحقوق
     st.markdown(f"""
             <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:25px; text-align:center;">
@@ -1053,3 +1391,22 @@ elif page == "ABOUT":
             </div>
         </div>
     """, unsafe_allow_html=True)
+# --- تذييل الصفحة الثابت (Footer) ---
+st.markdown("---") # خط فاصل بسيط
+st.markdown(f"""
+    <style>
+    .footer-text {{
+        text-align: center;
+        color: {BLUE}; 
+        font-family: 'Arial', sans-serif;
+        font-size: 18px;
+        font-weight: bold;
+        text-shadow: 0 0 10px {BLUE}, 0 0 20px {BLUE};
+        padding: 20px;
+        letter-spacing: 2px;
+    }}
+    </style>
+    <div class="footer-text">
+         جميع الحقوق محفوظة © 2026 Ayman Dev
+    </div>
+""", unsafe_allow_html=True)
