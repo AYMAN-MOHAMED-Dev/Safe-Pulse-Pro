@@ -28,3 +28,9 @@ __pycache__/
 *.view-data.py
 *.decoder.py
 *.view-data.py
+*.admin_panel.py
+*.secret.key
+*.user_registry.json
+*.praivate_info_pro.py
+*.git
+*.praivate_info_pro.py
