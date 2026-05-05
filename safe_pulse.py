@@ -12,26 +12,6 @@ from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from streamlit_js_eval import streamlit_js_eval, get_geolocation
 import string
-import streamlit as st
-from cryptography.fernet import Fernet
-import streamlit as st
-
-# التحقق مما إذا كان المستخدم قد سجل دخوله سابقاً من خلال رابط المتصفح
-if 'check_attempts' not in st.session_state:
-    st.session_state.check_attempts = 0
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "page" not in st.session_state:
-    st.session_state.page = "HOME"
-SUPPORT_QUOTES = {
-	"AR": [
-"فشل علاقة لا يعني فشلك كإنسان، بل يعني أن هذا الفصل من حياتك قد انتهى لتبدأ فصلاً أجمل.", "القلب الذي ينكسر، يلتئم ليصبح أقوى في مواجهة الخيبات القادمة.", "من لا يعرف قيمتك وأنت معه، سيعرفها جيداً حين يراك تمضي بدونه.", "لا تعتذر أبداً عن صدق مشاعرك، العيب فيمن لم يمتلك وعاءً كافياً لاحتوائها.", "أحياناً يكسر الله قلبك لينقذ روحك من علاقة كانت ستدمرك تماماً.", "الرحيل بكرامة هو انتصار عظيم لن تشعر بلذته إلا بعد حين.", "أنت تستحق شخصاً يحارب ليحميك، لا شخصاً تحارب أنت لتبقى في حياته.", "الحب لا يعني التضحية بكرامتك، فمن يحبك حقاً سيعزز كرامتك لا يهينها.", "لا تجعل خيبة واحدة تحول قلبك إلى حجر، فالعالم لا يزال مليئاً بالأوفياء.", "الوحدة أجمل بكثير من رفقة تجعلك تشعر أنك وحيد وأنت معهم.", "تعلم فن الاستغناء، فليس كل من دخل حياتك جاء ليبقى.", "النهايات هي في الحقيقة بدايات متنكرة، استعد لما هو قادم.", "لا تبكِ على من باعك، بل اشكر الله لأنه كشف لك الحقيقة قبل فوات الأوان.", "قيمتك لا يحددها رأي شخص فيك، بل يحددها تقديرك أنت لنفسك.", "الشفاء من علاقة سامة يبدأ بقرارك أنك لن تعود ضحية مرة أخرى.", "أعطِ نفسك وقتاً للحداد على ما مضى، ثم انهض كأنك لم تسقط أبداً.", "القلب الذي يمنح الفرص كثيراً، يرحل مرة واحدة دون عودة.", "أنت لست خياراً ثانياً لأحد، إما أن تكون الأول أو لا تكون.", "الخروج من علاقة مؤذية هو ولادة جديدة لروحك.", "لا تندم على معروف قدمته، فالنوايا الطيبة لا تضيع عند الله.", "النسيان ليس نسيان الأحداث، بل نسيان الشعور الذي خلفته تلك الأحداث.", "أحياناً نحتاج لفقدان أحدهم لكي نجد أنفسنا الضائعة.", "الحياة قصيرة جداً لتقضيها في انتظار من لا ينتظرك.", "كن كالنور، من أرادك سيسعى إليك، ومن فقدك سيعيش في الظلام.", "الحب الحقيقي يبني ولا يهدم، يرمم ولا يكسر.", "لا تقارن بدايتك بنهاية غيرك، لكل شخص مسار وقصة مختلفة.", "الثقة التي تُكسر لا تُرمم، لكنها تعلمك كيف تختار بعناية في المرة القادمة.", "سامح لترتاح أنت، وليس لأنهم يستحقون السماح.", "الكرامة هي الخط الأحمر الذي لا يجب أن يتخطاه أي حب في العالم.", "لا تستجدي الاهتمام، فالأشياء الجميلة تُمنح ولا تُطلب.", "من يحبك سيهتم بكسرك، ومن يهواك سيزيدك انكساراً.", "القوة ليست في عدم السقوط، بل في النهوض بعد كل سقطة.", "اكتفِ بنفسك، فالاعتماد العاطفي هو سجن لروحك.", "الحياة ستستمر بك أو بدونهم، فاختر أن تستمر وأنت شامخ.", "كل وجع مررت به هو درس صامت يجعلك أكثر حكمة.", "ضعف جسدك اليوم هو نداء لروحك لترتاح، فلا تقسُ على نفسك.", "المرض ليس نهاية الطريق، بل هو محطة لتتعلم الامتنان لأبسط النعم.", "صحتك هي استثمارك الأغلى، لا بأس أن تتوقف قليلاً لترمم جسدك.", "كل ألم تشعر به الآن هو زكاة لجسدك، ورفعة لدرجاتك.", "القوة النفسية قادرة على هزيمة أعتى الأمراض الجسدية.", "لا تحزن على عجز مؤقت، فالقمر يمر بمراحل المحاق قبل أن يكتمل نوراً.", "جسدك يحتاج لصبرك كما يحتاج للدواء، كن رحيماً به.", "الإرادة هي نصف العلاج، والتفاؤل هو النصف الآخر.", "الصحة تاج لا يراه إلا من مر بلحظات الضعف، حافظ على تاجك.", "أنت قوي بما يكفي لتجاوز هذه الوعكة، غداً ستكون ذكرى.", "التعافي رحلة وليس سباقاً، خذ وقتك بالكامل.", "لا تسمح للمرض أن يسرق بريق عينيك، الأمل دواء لا يُباع في الصيدليات.", "حتى في ذروة تعبك، تذكر أن هناك من ينتظر نهوضك بفارغ الصبر.", "جسدك هو منزلك الوحيد، اعتنِ به بالحب والهدوء.", "المرض يختبر معادن الناس من حولك، ويصقل معدنك أنت.", "كل يوم تشرق فيه الشمس هو فرصة جديدة لتعافي أفضل.", "لا تقلق، فالذي خلق الداء خلق الدواء، والثقة بالله هي الشفاء.", "استمتع بلحظات الهدوء، فالسكينة هي بيئة التعافي المثالية.", "أنت لست تشخيصاً طبياً، أنت روح عظيمة تقاوم ببطولة.", "الصبر على الألم هو أعلى مراتب الشجاعة.", "اعتبر فترة مرضك خلوة مع الله وإعادة ترتيب لأولوياتك.", "ابتسامتك في وجه الألم هي نصف الانتصار عليه.", "لا تنظر إلى ما فقدت صحياً، انظر إلى القوة التي اكتسبتها داخلياً.", "الغد يحمل لك صحة أفضل وصباحاً أجمل، كن مؤمناً بذلك.", "حتى الشجر يسقط ورقه ليعود مخضراً من جديد، وكذلك أنت.", "الضعف الجسدي ليس عيباً، بل هو طبيعة البشر، القوة هي في روحك.", "كل جرعة دواء هي خطوة نحو العافية، وكل دعاء هو تقصير للمسافة.", "كن ممتناً لكل خلية في جسدك تعمل الآن لأجلك.", "لا تيأس، فالمعجزات تحدث لأولئك الذين لا يتوقفون عن المحاولة.", "راحتك النفسية هي المحرك الأول لتعافي جسدك.", "اجعل من ألمك وقوداً لإبداعك، فالكثير من العظماء خرجوا من رحم الوجع.", "نفسك تستحق منك الدلال والاهتمام، خاصة في أوقات الضعف.", "تذكر أن الشدة لا تدوم، والعافية قادمة كفلق الصبح.", "أنت محارب، والمحاربون لا يستسلمون من المعركة الأولى.", "جسدك سيشكرك يوماً ما لأنك لم تستسلم في هذه اللحظة.", "عوض الله لا يأتي عادياً، بل يأتي ليُنسيك مرارة كل ما فقدت.", "ما ذهب منك لم يكن لك من البداية، وما هو لك لن يذهب لغيرك.", "الفقد موجع، لكنه يفتح في روحك مساحات لن يملأها إلا الله.", "عندما يأخذ الله منك شيئاً، فإنه يهيئ يديك لاستقبال شيء أعظم.", "الجبر قادم، وبطريقة لم تخطر على بالك أبداً.", "لا تبكِ على أطلال الماضي، فالمستقبل يبني لك قصوراً من العوض.", "خسارة الأشياء المادية هي أرخص أنواع الخسائر، طالما روحك بخير.", "أحياناً يرحل الجميل ليأتي الأجمل، ثق في تدبير الخالق.", "كل باب أُغلق في وجهك كان يحميك من شر لا تراه.", "الفقد يعلمنا قيمة اللحظة، والتعويض يعلمنا قيمة الصبر.", "سيعوضك الله حتى تظن أنك لم تحزن يوماً.", "الصبر على الفقد هو عبادة صامتة أجرها بغير حساب.", "الغياب ليس دائماً خسارة، أحياناً يكون نجاة.", "من فقد غاليًا، سيرزقه الله أنيساً يملأ قلبه طمأنينة.", "الحياة دولاب، اليوم فقد وغداً وجد، والرضا هو المكسب الحقيقي.", "لا تحزن على ما فات، فلو كان خيراً لبقي.", "العوض الحقيقي هو أن يرزقك الله راحة البال بعد شتات الروح.", "الفقد يكسرنا، لكن جبر الله يعيد تشكيلنا لنصبح أجمل.", "سيمسح الله على قلبك بلطفه حتى تبتسم رغماً عن كل شيء.", "كل دمعة سقطت منك في الخفاء، لها عوض كبير في العلن.", "استبشر خيراً، فالأقدار تخبئ لك ما يقر عينك.", "الفراغ الذي تركه الراحلون، سيملؤه الله بنور السكينة.", "لست وحدك، فالله معك في كل لحظة انكسار وفقد.", "العوض ليس دائماً شخصاً آخر، قد يكون سلاماً داخلياً لا يُقدّر بثمن.", "ما كان لك سيأتيك على ضعفك، وما ليس لك لن تناله بقوتك.", "أنت تسير في رعاية الله، فلا تخف من ضياع شيء.", "جبر القلوب من شيم العظماء، والله هو أعظم الجابرين.", "ابتسم، فعوض الله مدهش لدرجة تفوق الخيال.", "نهاية القصة دائماً سعيدة، إذا لم تكن سعيدة فهي ليست النهاية بعد.", "Safe Pulse PRO يذكرك دائماً: أنت تستحق الأفضل، والتعافي يبدأ من الداخل."
-	
-	],
-	"EN": [
-	 "A failed relationship does not mean you failed as a person; it simply means that chapter of your life has ended so a better one can begin.", "A broken heart heals to become stronger against future disappointments.", "Those who don’t know your worth when you’re with them will realize it when you walk away.", "Never apologize for your genuine feelings; the flaw lies in those who couldn’t hold them.", "Sometimes God breaks your heart to save your soul from a relationship that would have destroyed you.", "Leaving with dignity is a great victory you’ll only appreciate later.", "You deserve someone who fights to keep you, not someone you fight to stay with.", "Love doesn’t mean sacrificing your dignity; true love elevates you, not humiliates you.", "Don’t let one disappointment turn your heart to stone; the world still has loyal people.", "Being alone is far better than feeling lonely among others.", "Learn the art of letting go; not everyone who enters your life is meant to stay.", "Endings are often beginnings in disguise—prepare for what’s coming.", "Don’t cry over those who left you; thank God for revealing their truth.", "Your worth is not defined by others, but by how you value yourself.", "Healing from a toxic relationship begins when you decide not to be a victim again.", "Give yourself time to grieve, then rise as if you never fell.", "The heart that gives too many chances leaves once—and never returns.", "You are not a second option; either you are first, or nothing.", "Leaving a toxic relationship is a rebirth of your soul.", "Never regret kindness; sincere intentions are never wasted with God.", "Forgetting isn’t about events, but about letting go of the feelings they left behind.", "Sometimes losing someone helps us find ourselves.", "Life is too short to wait for someone who doesn’t wait for you.", "Be like light—those who want you will find their way to you.", "True love builds, it doesn’t destroy.", "Don’t compare your beginning to someone else’s end.", "Broken trust may not be repaired, but it teaches you to choose wisely.", "Forgive for your peace, not because they deserve it.", "Dignity is a red line no love should cross.", "Don’t beg for attention; beautiful things are given, not requested.", "The one who loves you cares for your brokenness; the one who doesn’t will deepen it.", "Strength is rising after every fall.", "Be enough for yourself; emotional dependence is a prison.", "Life goes on—with or without them.", "Every pain is a silent lesson.", "Your weakness today is your soul asking for rest.", "Illness is a lesson in gratitude.", "Your health is your greatest investment.", "Pain purifies and elevates you.", "Mental strength defeats illness.", "Temporary weakness is not the end.", "Your body needs your kindness.", "Hope and willpower heal.", "Health is a crown seen only by the sick.", "You are strong enough to heal.", "Recovery is a journey, not a race.", "Hope is the best medicine.", "Someone is waiting for your recovery.", "Your body is your home.", "Illness reveals true people.", "Each day is a new chance to heal.", "God created cure with disease.", "Peace is healing.", "You are more than a diagnosis.", "Patience is strength.", "Your struggle is spiritual growth.", "Smile through pain.", "Focus on your inner strength.", "Tomorrow is better.", "You will bloom again.", "Your soul is stronger than your body.", "Every step is healing.", "Be grateful for your body.", "Miracles happen to those who persist.", "Peace drives healing.", "Pain creates greatness.", "You deserve care.", "Relief is coming.", "You are a fighter.", "You will thank yourself later.", "God’s compensation is beyond imagination.", "What is yours will never be lost.", "Loss creates space for God.", "God prepares better things.", "Healing is coming unexpectedly.", "Your future holds better things.", "Material loss is nothing.", "Better things are coming.", "Closed doors protect you.", "Loss teaches patience.", "God will compensate you.", "Patience is rewarded.", "Absence can be protection.", "You will find comfort.", "Life rotates between loss and gain.", "What’s gone wasn’t yours.", "True compensation is peace.", "Loss reshapes you beautifully.", "God will heal your heart.", "Hidden tears are rewarded.", "Good is coming.", "God fills emptiness.", "You are never alone.", "Compensation is peace.", "What’s meant for you will come.", "You are under God’s protection.", "God heals hearts.", "Smile—better is coming.", "The story ends well.", "You deserve the best—healing starts within." 
-	 ]
-}
 
 def get_ai_response(u_input):
     import random
@@ -132,62 +112,6 @@ st.markdown("""
     animation: slide_up 0.5s ease-out;
 }
 
-/* هذا هو التصميم الزجاجي المشع الذي سيتحكم في شكل الزر */
-/* تصميم كارت الاقتباس النيون المشع */
-.quote-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    border-radius: 20px;
-    padding: 25px;
-    margin: 20px 0;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* تأثير الهافر المضيء (Neon Glow) */
-.quote-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    background: rgba(0, 212, 255, 0.08);
-    border-color: #00d4ff;
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.4), inset 0 0 15px rgba(0, 212, 255, 0.1);
-}
-
-/* الخط الجانبي المضيء لزيادة التأثير الجمالي */
-.quote-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background: #00d4ff;
-    box-shadow: 0 0 15px #00d4ff;
-}
-.glass-chat-btn {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 212, 255, 0.3);
-    border-radius: 15px;
-    padding: 12px 20px;
-    color: white !important;
-    text-align: center;
-    display: block;
-    text-decoration: none;
-    font-weight: bold;
-    transition: all 0.4s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transform-style: preserve-3d;
-}
-
-.glass-chat-btn:hover {
-    transform: translateY(-5px) rotateX(15deg);
-    background: rgba(0, 212, 255, 0.2);
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
-    border-color: #00d4ff;
-}
 .ai-title {
     color: #00d4ff;
     font-size: 1.2rem;
@@ -268,76 +192,6 @@ def load_user_data(username):
         return None
     return None
 
-def auto_sync_to_cloud():
-    """دالة لرفع كافة البيانات الحالية للسحابة بشكل صامت"""
-    try:
-        # 1. تجميع كل البيانات من الـ session_state
-        current_vault_data = {
-            "fav_person_1_name": st.session_state.get('fav_name', 'غير مسجل'),
-            "fav_person_1_phone": st.session_state.get('fav_phone', 'غير مسجل'),
-            "health_info": st.session_state.get('health_data', {}),
-            "ai_chat_history": st.session_state.get('chat_history', []),
-            "personal_chat": st.session_state.get('private_chat', []),
-            "activity_logs": st.session_state.get('logs', [])
-        }
-        
-        # 2. التشفير
-        encrypted_data = cipher.encrypt(json.dumps(current_vault_data).encode()).decode()
-        
-        # 3. الرفع للسحابة
-        db.collection("users").document(st.session_state.current_user_id).update({
-            "vault": encrypted_data
-        })
-        return True
-    except Exception as e:
-        print(f"Sync Error: {e}")
-        return False
-        
-def get_decrypted_dashboard(user_id):
-    """دالة شاملة لفك تشفير كل السجلات المطلوبة"""
-    try:
-        db = firestore.client()
-        # 1. جلب البيانات الأساسية من الحاوية الرئيسية (Vault)
-        doc = db.collection("users").document(user_id).get()
-        all_data = {}
-        
-        if doc.exists:
-            raw_vault = doc.to_dict().get("vault")
-            # فك تشفير المحفظة الرئيسية (تحتوي على الباسورد، سجل الشات الشخصي)
-            decrypted_vault = json.loads(cipher.decrypt(raw_vault.encode()).decode())
-            all_data['password'] = decrypted_vault.get("password", "غير متوفر")
-            all_data['personal_chat'] = decrypted_vault.get("personal_chat", [])
-            
-        # 2. فك تشفير سجل أسئلة الذكاء الاصطناعي (من مجموعة ai_vault)
-        ai_docs = db.collection("users").document(user_id).collection("ai_vault").stream()
-        all_data['ai_questions'] = []
-        for d in ai_docs:
-            data = d.to_dict()
-            # فك تشفير السؤال والرد
-            all_data['ai_questions'].append({
-                "q": cipher.decrypt(data['question'].encode()).decode(),
-                "a": cipher.decrypt(data['answer'].encode()).decode()
-            })
-
-        # 3. فك تشفير سجل الأمراض ونسبتها (من مجموعة medical)
-        med_docs = db.collection("users").document(user_id).collection("medical").stream()
-        all_data['medical_records'] = []
-        for d in med_docs:
-            data = d.to_dict()
-            all_data['medical_records'].append({
-                "disease": cipher.decrypt(data['disease_name'].encode()).decode(),
-                "ratio": data.get("ratio", "0%")
-            })
-
-        # 4. سجل التواصل مع المبرمج
-        contact_docs = db.collection("users").document(user_id).collection("activity").where("type", "==", "dev_contact").stream()
-        all_data['dev_contact_logs'] = [d.to_dict() for d in contact_docs]
-
-        return all_data
-    except Exception as e:
-        st.error(f"خطأ أثناء فك التشفير الشامل: {e}")
-        return None
-
 def get_64(path):
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -391,34 +245,30 @@ def get_user_from_token(token):
 
 # --- 4. إدارة الجلسة المستقرة واستعادة التوكن ---
 
-# --- الجزء الجديد المطور لمنع تسجيل الخروج ---
+token_from_browser = streamlit_js_eval(
+    js_expressions="localStorage.getItem('sp_token')",
+    key="persistent_session_check_v5"
+)
 
-# 1. تهيئة عداد المحاولات إذا لم يكن موجوداً
-if 'check_attempts' not in st.session_state:
-    st.session_state.check_attempts = 0
-
-# 2. طلب التوكن من المتصفح (هذه العملية تأخذ أجزاء من الثانية)
-stored_token = streamlit_js_eval(js_expressions="localStorage.getItem('sp_token')", key="stable_token_check_v1")
-
-# 3. منطق التحقق الذكي
-if not st.session_state.get("authenticated", False):
-    if stored_token:
-        # إذا وجدنا التوكن، نقوم بالتحقق من صحته في قاعدة البيانات
-        found_user = get_user_from_token(stored_token)
-        if found_user:
-            user_data = load_user_data(found_user)
+if not st.session_state.authenticated:
+    if token_from_browser:
+        user = get_user_from_token(token_from_browser)
+        if user:
+            user_data = load_user_data(user)
             if user_data:
-                st.session_state.current_user = found_user
+                st.session_state.current_user = user
                 st.session_state.secure_vault = user_data
                 st.session_state.authenticated = True
-                st.rerun() # إعادة تشغيل التطبيق لفتح الواجهة الرئيسية
-    else:
-        # إذا لم يظهر التوكن فوراً، نعطي التطبيق 3 محاولات (حوالي ثانية واحدة)
-        # هذا يمنع تسجيل الخروج الظالم بسبب بطء المتصفح
-        if st.session_state.check_attempts < 3:
-            st.session_state.check_attempts += 1
-            time.sleep(0.4) 
-            st.rerun()
+                st.session_state.page = "HOME"
+                st.rerun()
+        else:
+            st.session_state.check_attempts = 10
+
+    elif st.session_state.check_attempts < 3:
+        st.session_state.check_attempts += 1
+        st.info("جاري استعادة جلسة العمل... يرجى الانتظار")
+        time.sleep(1)
+        st.rerun()
 
 vault = st.session_state.get('secure_vault', get_user_defaults("guest"))
 if "lang" not in st.session_state:
@@ -564,37 +414,14 @@ if not st.session_state.authenticated:
         }}
     </style>
     """, unsafe_allow_html=True)
-    
-    # مكان الكود: ملف safe_pulse.py
-def load_encrypted_vault_data(user_id):
-    db = firestore.client()
-    
-    # جلب الحسابات
-    pass_ref = db.collection("users").document(user_id).collection("vault").stream()
-    st.session_state.passwords_encrypted = [doc.to_dict() for doc in pass_ref]
-    
-    # جلب سجل الذكاء الاصطناعي
-    ai_ref = db.collection("users").document(user_id).collection("ai_vault").stream()
-    st.session_state.ai_logs_encrypted = [doc.to_dict() for doc in ai_ref]
-    
-    # جلب البيانات الطبية
-    med_ref = db.collection("users").document(user_id).collection("medical").stream()
-    st.session_state.medical_encrypted = [doc.to_dict() for doc in med_ref]
-    
-    # جلب أرقام المقربين
-    fav_ref = db.collection("users").document(user_id).collection("favorites").stream()
-    st.session_state.contacts_encrypted = [doc.to_dict() for doc in fav_ref]
 
-
-# التأكد من حالة تسجيل الدخول لعرض واجهة الدخول
-if not st.session_state.authenticated:
     # --- 2. اللوجو والترحيب ---
     logo_data = get_64("assets/icons/icon.png")
     st.markdown(f"""
         <div style="text-align:center; padding-top:30px;">
             <img src="data:image/png;base64,{logo_data}" style="width:180px;">
             <h1 style="color:#00d4ff; font-size:2.8rem; text-shadow:0 0 10px #00d4ff;">Safe Pulse PRO</h1>
-            <h2 style="color:white; font-size:2.8rem; text-shadow:0 0 6px white;">نبض الأمان</h2>
+            <h2 style="color:white; font-size:2.8rem; text-shadow:0 0 6px white;">نبض الآمان</h2>
             <h3 style="color:white; text-shadow: 0 0 10px #00d4ff;">مرحباً بك</h3>
             <p style="color:#e6edf3; opacity:0.9;">أمانك الطبي، حمايتك من السرقة، والاستغاثة.. في مكان واحد</p>
         </div>
@@ -614,35 +441,27 @@ if not st.session_state.authenticated:
                     # فك تشفير كلمة المرور بواسطة Fernet
                     decrypted_pass = cipher.decrypt(stored_encrypted).decode('utf-8')
                     if in_pass == decrypted_pass:
-                        # 🛑 الخطوة الأهم: إنشاء التوكن وحفظه في المتصفح لمنع تسجيل الخروج التلقائي
                         token = create_session(in_user)
-                        streamlit_js_eval(js_expressions=f"localStorage.setItem('sp_token', '{token}')")
-                        
-                        # إعدادات الجلسة الداخلية
                         st.session_state.current_user = in_user
                         st.session_state.secure_vault = load_user_data(in_user) or get_user_defaults(in_user)
                         st.session_state.authenticated = True
                         st.session_state.page = "HOME"
-                        
-                        st.success("🎯 تم التحقق.. جاري الدخول")
-                        time.sleep(0.5)
+                        streamlit_js_eval(js_expressions=f"localStorage.setItem('sp_token', '{token}')")
                         st.rerun()
                     else:
                         st.error("❌ كلمة المرور غير صحيحة")
                 except Exception as e:
-                    st.error("⚠️ خطأ في تشفير الحساب القديم. يرجى إنشاء حساب جديد.")
+                    st.error("⚠️ خطأ في تشفير الحساب القديم أو فك التشفير. يرجى مسح ملف registry وإنشاء حساب جديد.")
             else:
                 st.error("❌ المستخدم غير موجود")
 
     with tab_setup:
-        # استخدام القاموس LEX المتاح في كودك للترجمة
-        L = LEX[st.session_state.lang]
-        st.subheader("✨ إنشاء حساب جديد وقفل البيانات")
-        new_user = st.text_input("اسم المستخدم الجديد", key="s_user")
-        new_pass = st.text_input("كلمة المرور الجديدة", type="password", key="s_pass")
+        st.subheader(L["setup_h"])
+        new_user = st.text_input(L["login_user"], key="s_user")
+        new_pass = st.text_input(L["login_pass"], type="password", key="s_pass")
         confirm_pass = st.text_input("تأكيد كلمة المرور", type="password", key="s_pass_conf")
         
-        if st.button("إنشاء الحساب وتفعيل الحماية"):
+        if st.button("إنشاء الحساب وتشفير المحفظة"):
             if not new_user or not new_pass:
                 st.error("يرجى ملء كافة البيانات")
             elif new_pass != confirm_pass:
@@ -650,26 +469,59 @@ if not st.session_state.authenticated:
             elif new_user in get_registry():
                 st.error("اسم المستخدم موجود مسبقاً")
             else:
-                with st.spinner("جاري إنشاء الحساب وتشفير المحفظة..."):
+                with st.spinner("جاري إنشاء الحساب وتشفير البيانات..."):
                     # 1. حفظ في الريجستري المحلي (مشفراً)
                     save_to_registry(new_user, new_pass)
                     # 2. إنشاء بيانات افتراضية وحفظها في Firestore
                     default_data = get_user_defaults(new_user)
                     save_user_data(new_user, default_data)
-                    
-                    # 3. تسجيل دخول تلقائي بعد الإنشاء لراحة المستخدم
-                    token = create_session(new_user)
-                    streamlit_js_eval(js_expressions=f"localStorage.setItem('sp_token', '{token}')")
-                    
-                    st.session_state.current_user = new_user
-                    st.session_state.secure_vault = default_data
-                    st.session_state.authenticated = True
-                    st.success("✨ تم إنشاء حسابك وتأمين بياناتك بنجاح!")
-                    time.sleep(1)
-                    st.rerun()
+                    st.success("✨ تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.")
 
     st.markdown('<div class="footer-signature">Ayman Dev</div>', unsafe_allow_html=True)
     st.stop()
+
+# --- 8. محتوى البرنامج (بعد الدخول) ---
+
+# --- 1. عرض اللوجو والعناوين (المدمج) ---
+logo_data = get_64("assets/icons/icon.png")
+
+# دمج اللوجو مع النص الإنجليزي (أزرق) والنص العربي (أبيض) في بلوك واحد
+st.markdown(f"""
+    <div style="text-align:center; margin-bottom: 20px;">
+        <img src="data:image/png;base64,{logo_data}" style="width:110px; filter:drop-shadow({GLOW});">
+        <h2 style="color:{BLUE}; text-shadow:{GLOW}; font-size:2rem; margin-bottom: 0px;">
+            Safe Pulse PRO
+        </h2>
+        <h2 style="color:white; font-size:2.2rem; text-shadow:0 0 6px white; margin-top: -8px;">
+            نبض الآمان
+        </h2>
+    </div>
+""", unsafe_allow_html=True)
+
+# --- 2. شريط التنقل (Navigation Bar) ---
+nav_keys = ["HOME", "AID", "AI", "SET", "ABOUT", "LANG"]
+n_cols = st.columns(len(L["nav"]) + 1)
+
+for idx, label in enumerate(L["nav"]):
+    if n_cols[idx].button(label, key=f"nav_{idx}"):
+        if nav_keys[idx] == "LANG":
+            st.session_state.lang = "EN" if st.session_state.lang == "AR" else "AR"
+            vault["lang"] = st.session_state.lang
+            save_user_data(st.session_state.current_user, vault)
+            st.rerun()
+        else:
+            st.session_state.page = nav_keys[idx]
+            st.rerun()
+
+# زر تسجيل الخروج
+if n_cols[-1].button(L["logout"], key="logout_final_btn"):
+    st.session_state.authenticated = False
+    st.session_state.current_user = ""
+    try:
+        streamlit_js_eval(js_expressions="localStorage.removeItem('sp_token')")
+    except:
+        pass
+    st.rerun()
 
 st.divider()
 page = st.session_state.page
@@ -724,30 +576,26 @@ if page == "HOME":
         </style>
     """, unsafe_allow_html=True)
 
+# عرض اللوجو
     img_logo = get_64("assets/icons/icon.png")
     if img_logo:
         st.markdown(f'<img src="data:image/png;base64,{img_logo}" class="main-logo-pulse">', unsafe_allow_html=True)
     else:
         st.markdown(f'<div style="text-align:center; font-size:50px;" class="main-logo-pulse">🛡️</div>', unsafe_allow_html=True)
 
-    # 1. جلب اسم المستخدم بأمان لتجنب خطأ AttributeError
-    user_name = st.session_state.get('current_user', 'Guest')
-
-# 2. كود العرض باللون الأزرق النيون (نفس لون الهوية) مع ضبط المسافات
-    st.markdown(f'''
-    <div class="welcome-text" style="text-align:center; margin-bottom: 20px;">
-        {L.get("welcome", "Welcome")} 
-        <span style="color: #00d4ff; text-shadow: 0 0 15px #00d4ff; font-weight: bold; font-size: 1.2em;">
-            {user_name}
-        </span>
-    </div>
-''', unsafe_allow_html=True)
-
-# 3. التأكد من أن الأسطر التالية تبدأ من محاذاة اليسار تماماً
-    
+    # عرض نص الترحيب مع تلوين اسم المستخدم باللون اللبني (BLUE)
+    # ملاحظة: تأكد أن متغير BLUE معرف لديك مسبقاً بقيمة مثل "#00D4FF"
+    st.markdown(f"""
+        <div class="welcome-text" style="text-align:center;">
+            {L["welcome"]} 
+            <span class="neon-user" style="color:{BLUE}; font-weight:bold; text-shadow: 0 0 10px {BLUE}44;">
+                {st.session_state.current_user}
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
     c_chat, c_neon = st.columns([1, 1])
     with c_chat:
-        if st.button("💖 شاتك الشخصي"): 
+        if st.button("💬 شاتك الشخصي"): 
             st.session_state.page = "CHAT"
             st.rerun()
     with c_neon:
@@ -824,97 +672,28 @@ if st.session_state.page == "AI":
     u_input_final = st.text_area(L["ai_label"], height=150, key="fixed_neon_ai_input") 
     
     col1, col2 = st.columns([3, 1])
-    # إضافة ستايل النيون في بداية قسم العرض
-    st.markdown("""
-        <style>
-        div.stButton > button:first-child {
-            background-color: #000000;
-            color: #00f2fe;
-            border: 2px solid #00f2fe;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #00f2fe, 0 0 20px #00f2fe;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        div.stButton > button:hover {
-            background-color: #00f2fe;
-            color: #000000;
-            box-shadow: 0 0 30px #00f2fe, 0 0 50px #00f2fe;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     with col1:
         if st.button(L["ai_btn"], key="fixed_neon_ai_button"):
             if u_input_final:
                 with st.spinner("جاري استشارة المسعف الذكي..."):
-                    # 1. جلب الرد
                     result = get_ai_response(u_input_final)
                     st.session_state.ai_result = result
-                    
-                    # 2. تحديث السجل المحلي (تراكمي)
-                    if "chat_history" not in st.session_state:
-                        st.session_state.chat_history = []
-                    
-                    # إضافة السؤال والجواب للسجل الحالي
-                    st.session_state.chat_history.append(f"المستخدم: {u_input_final}")
-                    st.session_state.chat_history.append(f"🤖 المسعف: {result}")
-                    
-                    # 3. الرفع الفوري والإجباري للسحابة (بدون زر حفظ)
-                    try:
-                        # تجهيز المحفظة بكل البيانات الحالية
-                        current_vault = {
-                            "fav_person_1_name": st.session_state.get('fav_name', 'غير مسجل'),
-                            "fav_person_1_phone": st.session_state.get('fav_phone', 'غير مسجل'),
-                            "health_info": st.session_state.get('health_data', {}),
-                            "ai_chat_history": st.session_state.chat_history, # السجل الكامل هنا
-                            "personal_chat": st.session_state.get('private_chat', []),
-                            "activity_logs": st.session_state.get('logs', [])
-                        }
-                        
-                        # التشفير
-                        enc_data = cipher.encrypt(json.dumps(current_vault).encode()).decode()
-                        
-                        # تحديد المعرف والرفع
-                        u_id = st.session_state.get('current_user_id') or st.session_state.get('current_user')
-                        if u_id:
-                            db.collection("users").document(u_id).update({"vault": enc_data})
-                            # لا تظهر رسالة نجاح هنا حتى لا تزعج المستخدم، الرفع يتم بصمت
-                    except Exception as cloud_err:
-                        st.error(f"حدث خطأ أثناء المزامنة التلقائية: {cloud_err}")
             else:
                 st.warning("يرجى كتابة سؤالك أولاً.")
+    
     with col2:
-        # زر المسح بستايل مختلف (أحمر نيون)
-        st.markdown("""
-            <style>
-            button[key="clear_ai_fixed"] {
-                border-color: #ff0055 !important;
-                color: #ff0055 !important;
-                box-shadow: 0 0 10px #ff0055 !important;
-            }
-            button[key="clear_ai_fixed"]:hover {
-                background-color: #ff0055 !important;
-                color: white !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
         if st.button("مسح 🗑️", key="clear_ai_fixed"):
             st.session_state.ai_result = None
             st.rerun()
 
-    # --- عرض النتيجة بستايل نيون ناعم ---
-    if st.session_state.get("ai_result"):
-        st.markdown("---")
+    if st.session_state.ai_result:
         st.markdown(f"""
-            <div style="padding:20px; border-radius:15px; border: 1px solid #00f2fe; 
-            background-color: rgba(0, 242, 254, 0.05); box-shadow: inset 0 0 10px #00f2fe;">
-                <h3 style="color:#00f2fe; margin-top:0;">🤖 إجابة المسعف الذكي:</h3>
-                <p style="color:white; font-size:1.1em; line-height:1.6;">
-                    {st.session_state.ai_result}
-                </p>
-            </div>
+        <div class="ai-neon-card">
+            <div style="color:#00d4ff; font-weight:bold; margin-bottom:10px;">🤖 المسعف الذكي:</div>
+            <div style="color:white; line-height:1.7;">{st.session_state.ai_result}</div>
+        </div>
         """, unsafe_allow_html=True)
+
 elif page == "AID":
     lang = st.session_state.lang
     title_text = "🚑 الإسعافات الأولية" if lang == "AR" else "🚑 First Aid Guide"
@@ -1034,324 +813,299 @@ elif page == "AID":
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "CHAT":
+    # ضمان وجود سجل الرسائل في الجلسة
     if "messages" not in st.session_state:
         st.session_state.messages = st.session_state.secure_vault.get("chat_history", [])
 
-    quotes = [
-         "فشل علاقة لا يعني فشلك كإنسان، بل يعني أن هذا الفصل من حياتك قد انتهى لتبدأ فصلاً أجمل.",
-        "القلب الذي ينكسر، يلتئم ليصبح أقوى في مواجهة الخيبات القادمة.",
-        "من لا يعرف قيمتك وأنت معه، سيعرفها جيداً حين يراك تمضي بدونه.",
-        "لا تعتذر أبداً عن صدق مشاعرك، العيب فيمن لم يمتلك وعاءً كافياً لاحتوائها.",
-        "أحياناً يكسر الله قلبك لينقذ روحك من علاقة كانت ستدمرك تماماً.",
-        "الرحيل بكرامة هو انتصار عظيم لن تشعر بلذته إلا بعد حين.",
-        "أنت تستحق شخصاً يحارب ليحميك، لا شخصاً تحارب أنت لتبقى في حياته.",
-        "الحب لا يعني التضحية بكرامتك، فمن يحبك حقاً سيعزز كرامتك لا يهينها.",
-        "لا تجعل خيبة واحدة تحول قلبك إلى حجر، فالعالم لا يزال مليئاً بالأوفياء.",
-        "الوحدة أجمل بكثير من رفقة تجعلك تشعر أنك وحيد وأنت معهم.",
-        "تعلم فن الاستغناء، فليس كل من دخل حياتك جاء ليبقى.",
-        "النهايات هي في الحقيقة بدايات متنكرة، استعد لما هو قادم.",
-        "لا تبكِ على من باعك، بل اشكر الله لأنه كشف لك الحقيقة قبل فوات الأوان.",
-        "قيمتك لا يحددها رأي شخص فيك، بل يحددها تقديرك أنت لنفسك.",
-        "الشفاء من علاقة سامة يبدأ بقرارك أنك لن تعود ضحية مرة أخرى.",
-        "أعطِ نفسك وقتاً للحداد على ما مضى، ثم انهض كأنك لم تسقط أبداً.",
-        "القلب الذي يمنح الفرص كثيراً، يرحل مرة واحدة دون عودة.",
-        "أنت لست خياراً ثانياً لأحد، إما أن تكون الأول أو لا تكون.",
-        "الخروج من علاقة مؤذية هو ولادة جديدة لروحك.",
-        "لا تندم على معروف قدمته، فالنوايا الطيبة لا تضيع عند الله.",
-        "النسيان ليس نسيان الأحداث، بل نسيان الشعور الذي خلفته تلك الأحداث.",
-        "أحياناً نحتاج لفقدان أحدهم لكي نجد أنفسنا الضائعة.",
-        "الحياة قصيرة جداً لتقضيها في انتظار من لا ينتظرك.",
-        "كن كالنور، من أرادك سيسعى إليك، ومن فقدك سيعيش في الظلام.",
-        "الحب الحقيقي يبني ولا يهدم، يرمم ولا يكسر.",
-        "لا تقارن بدايتك بنهاية غيرك، لكل شخص مسار وقصة مختلفة.",
-        "الثقة التي تُكسر لا تُرمم، لكنها تعلمك كيف تختار بعناية في المرة القادمة.",
-        "سامح لترتاح أنت، وليس لأنهم يستحقون السماح.",
-        "الكرامة هي الخط الأحمر الذي لا يجب أن يتخطاه أي حب في العالم.",
-        "لا تستجدي الاهتمام، فالأشياء الجميلة تُمنح ولا تُطلب.",
-        "من يحبك سيهتم بكسرك، ومن يهواك سيزيدك انكساراً.",
-        "القوة ليست في عدم السقوط، بل في النهوض بعد كل سقطة.",
-        "اكتفِ بنفسك، فالاعتماد العاطفي هو سجن لروحك.",
-        "الحياة ستستمر بك أو بدونهم، فاختر أن تستمر وأنت شامخ.",
-        "كل وجع مررت به هو درس صامت يجعلك أكثر حكمة.",
-        "ضعف جسدك اليوم هو نداء لروحك لترتاح، فلا تقسُ على نفسك.",
-        "المرض ليس نهاية الطريق، بل هو محطة لتتعلم الامتنان لأبسط النعم.",
-        "صحتك هي استثمارك الأغلى، لا بأس أن تتوقف قليلاً لترمم جسدك.",
-        "كل ألم تشعر به الآن هو زكاة لجسدك، ورفعة لدرجاتك.",
-        "القوة النفسية قادرة على هزيمة أعتى الأمراض الجسدية.",
-        "لا تحزن على عجز مؤقت، فالقمر يمر بمراحل المحاق قبل أن يكتمل نوراً.",
-        "جسدك يحتاج لصبرك كما يحتاج للدواء، كن رحيماً به.",
-        "الإرادة هي نصف العلاج، والتفاؤل هو النصف الآخر.",
-        "الصحة تاج لا يراه إلا من مر بلحظات الضعف، حافظ على تاجك.",
-        "أنت قوي بما يكفي لتجاوز هذه الوعكة، غداً ستكون ذكرى.",
-        "التعافي رحلة وليس سباقاً، خذ وقتك بالكامل.",
-        "لا تسمح للمرض أن يسرق بريق عينيك، الأمل دواء لا يُباع في الصيدليات.",
-        "حتى في ذروة تعبك، تذكر أن هناك من ينتظر نهوضك بفارغ الصبر.",
-        "جسدك هو منزلك الوحيد، اعتنِ به بالحب والهدوء.",
-        "المرض يختبر معادن الناس من حولك، ويصقل معدنك أنت.",
-        "كل يوم تشرق فيه الشمس هو فرصة جديدة لتعافي أفضل.",
-        "لا تقلق، فالذي خلق الداء خلق الدواء، والثقة بالله هي الشفاء.",
-        "استمتع بلحظات الهدوء، فالسكينة هي بيئة التعافي المثالية.",
-        "أنت لست تشخيصاً طبياً، أنت روح عظيمة تقاوم ببطولة.",
-        "الصبر على الألم هو أعلى مراتب الشجاعة.",
-        "اعتبر فترة مرضك خلوة مع الله وإعادة ترتيب لأولوياتك.",
-        "ابتسامتك في وجه الألم هي نصف الانتصار عليه.",
-        "لا تنظر إلى ما فقدت صحياً، انظر إلى القوة التي اكتسبتها داخلياً.",
-        "الغد يحمل لك صحة أفضل وصباحاً أجمل، كن مؤمناً بذلك.",
-        "حتى الشجر يسقط ورقه ليعود مخضراً من جديد، وكذلك أنت.",
-        "الضعف الجسدي ليس عيباً، بل هو طبيعة البشر، القوة هي في روحك.",
-        "كل جرعة دواء هي خطوة نحو العافية، وكل دعاء هو تقصير للمسافة.",
-        "كن ممتناً لكل خلية في جسدك تعمل الآن لأجلك.",
-        "لا تيأس، فالمعجزات تحدث لأولئك الذين لا يتوقفون عن المحاولة.",
-        "راحتك النفسية هي المحرك الأول لتعافي جسدك.",
-        "اجعل من ألمك وقوداً لإبداعك، فالكثير من العظماء خرجوا من رحم الوجع.",
-        "نفسك تستحق منك الدلال والاهتمام، خاصة في أوقات الضعف.",
-        "تذكر أن الشدة لا تدوم، والعافية قادمة كفلق الصبح.",
-        "أنت محارب، والمحاربون لا يستسلمون من المعركة الأولى.",
-        "جسدك سيشكرك يوماً ما لأنك لم تستسلم في هذه اللحظة.",
-        "عوض الله لا يأتي عادياً، بل يأتي ليُنسيك مرارة كل ما فقدت.",
-        "ما ذهب منك لم يكن لك من البداية، وما هو لك لن يذهب لغيرك.",
-        "الفقد موجع، لكنه يفتح في روحك مساحات لن يملأها إلا الله.",
-        "عندما يأخذ الله منك شيئاً، فإنه يهيئ يديك لاستقبال شيء أعظم.",
-        "الجبر قادم، وبطريقة لم تخطر على بالك أبداً.",
-        "لا تبكِ على أطلال الماضي، فالمستقبل يبني لك قصوراً من العوض.",
-        "خسارة الأشياء المادية هي أرخص أنواع الخسائر، طالما روحك بخير.",
-        "أحياناً يرحل الجميل ليأتي الأجمل، ثق في تدبير الخالق.",
-        "كل باب أُغلق في وجهك كان يحميك من شر لا تراه.",
-        "الفقد يعلمنا قيمة اللحظة، والتعويض يعلمنا قيمة الصبر.",
-        "سيعوضك الله حتى تظن أنك لم تحزن يوماً.",
-        "الصبر على الفقد هو عبادة صامتة أجرها بغير حساب.",
-        "الغياب ليس دائماً خسارة، أحياناً يكون نجاة.",
-        "من فقد غاليًا، سيرزقه الله أنيساً يملأ قلبه طمأنينة.",
-        "الحياة دولاب، اليوم فقد وغداً وجد، والرضا هو المكسب الحقيقي.",
-        "لا تحزن على ما فات، فلو كان خيراً لبقي.",
-        "العوض الحقيقي هو أن يرزقك الله راحة البال بعد شتات الروح.",
-        "الفقد يكسرنا، لكن جبر الله يعيد تشكيلنا لنصبح أجمل.",
-        "سيمسح الله على قلبك بلطفه حتى تبتسم رغماً عن كل شيء.",
-        "كل دمعة سقطت منك في الخفاء، لها عوض كبير في العلن.",
-        "استبشر خيراً، فالأقدار تخبئ لك ما يقر عينك.",
-        "الفراغ الذي تركه الراحلون، سيملؤه الله بنور السكينة.",
-        "لست وحدك، فالله معك في كل لحظة انكسار وفقد.",
-        "العوض ليس دائماً شخصاً آخر، قد يكون سلاماً داخلياً لا يُقدّر بثمن.",
-        "ما كان لك سيأتيك على ضعفك، وما ليس لك لن تناله بقوتك.",
-        "أنت تسير في رعاية الله، فلا تخف من ضياع شيء.",
-        "جبر القلوب من شيم العظماء، والله هو أعظم الجابرين.",
-        "ابتسم، فعوض الله مدهش لدرجة تفوق الخيال.",
-        "نهاية القصة دائماً سعيدة، إذا لم تكن سعيدة فهي ليست النهاية بعد.",
-        "Safe Pulse PRO يذكرك دائماً: أنت تستحق الأفضل، والتعافي يبدأ من الداخل."
-    ]
+    # تحديد اللغة الحالية بناء على إعدادات المستخدم
+    current_lang = st.session_state.get("lang", "AR")
 
-    SUPPORT_QUOTES_EN = [
-    "A failed relationship doesn't mean you've failed; it means that chapter ended to start a more beautiful one.",
-    "A broken heart heals to become stronger against future disappointments.",
-    "Those who don't know your value while you're with them will know it when you walk away.",
-    "Never apologize for the sincerity of your feelings; the fault lies in those who couldn't contain them.",
-    "Sometimes God breaks your heart to save your soul from a relationship that would have destroyed you.",
-    "Leaving with dignity is a great victory that you will only appreciate later.",
-    "You deserve someone who fights to keep you, not someone you have to fight for to stay.",
-    "Love doesn't mean sacrificing your dignity; true love enhances it, never insults it.",
-    "Don't let one disappointment turn your heart to stone; the world is still full of loyal people.",
-    "Loneliness is far more beautiful than company that makes you feel alone.",
-    "Learn the art of letting go; not everyone who enters your life is meant to stay.",
-    "Endings are actually beginnings in disguise; prepare for what's coming.",
-    "Don't cry over who sold you; thank God for revealing the truth before it was too late.",
-    "Your value is not defined by someone's opinion of you, but by your own self-appreciation.",
-    "Healing from a toxic relationship starts with the decision to never be a victim again.",
-    "Give yourself time to mourn what's gone, then rise as if you never fell.",
-    "The heart that gives many chances leaves once and never returns.",
-    "You are not a second choice for anyone; you are either the first or nothing.",
-    "Exiting a hurtful relationship is a rebirth for your soul.",
-    "Never regret the kindness you gave; good intentions are never lost with God.",
-    "Forgetfulness isn't about forgetting events, but forgetting the feeling they left behind.",
-    "Sometimes we need to lose someone to find our lost selves.",
-    "Life is too short to spend it waiting for someone who isn't waiting for you.",
-    "Be like light; those who want you will seek you, and those who lose you will live in darkness.",
-    "True love builds and never destroys; it repairs and never breaks.",
-    "Don't compare your beginning to someone else's end; everyone has a different path.",
-    "Broken trust cannot be fully repaired, but it teaches you how to choose carefully next time.",
-    "Forgive so you can find peace, not because they deserve forgiveness.",
-    "Dignity is the red line that no love in the world should ever cross.",
-    "Don't beg for attention; beautiful things are given, not requested.",
-    "Those who love you will care about your brokenness; those who don't will only break you more.",
-    "Strength isn't in never falling, but in rising after every fall.",
-    "Be self-sufficient; emotional dependency is a prison for your soul.",
-    "Life goes on with or without them; choose to move forward with pride.",
-    "Every pain you’ve endured is a silent lesson making you wiser.",
-    "Your body’s weakness today is a call for your soul to rest; don't be hard on yourself.",
-    "Illness is not the end of the road; it's a station to learn gratitude for the simplest blessings.",
-    "Your health is your greatest investment; it's okay to stop and repair your body.",
-    "Every pain you feel now is a purification for your body and a rise in your status.",
-    "Mental strength is capable of defeating the toughest physical ailments.",
-    "Don't grieve over temporary weakness; the moon fades before it returns to full light.",
-    "Your body needs your patience just as much as it needs medicine; be kind to it.",
-    "Willpower is half the cure, and optimism is the other half.",
-    "Health is a crown only seen by those who have known weakness; keep your crown.",
-    "You are strong enough to overcome this illness; tomorrow it will be just a memory.",
-    "Recovery is a journey, not a race; take all the time you need.",
-    "Don't let illness steal the spark in your eyes; hope is a medicine not sold in pharmacies.",
-    "Even at your peak fatigue, remember there are those waiting for you to rise.",
-    "Your body is your only home; treat it with love and calm.",
-    "Illness tests the metal of people around you and polishes your own.",
-    "Every sunrise is a new chance for better recovery.",
-    "Don't worry; He who created the ailment created the cure. Trust in God is healing.",
-    "Enjoy the moments of quiet; serenity is the perfect environment for recovery.",
-    "You are not a medical diagnosis; you are a great soul fighting heroically.",
-    "Patience with pain is the highest form of courage.",
-    "Consider your illness a retreat with God and a reordering of your priorities.",
-    "Your smile in the face of pain is half the victory over it.",
-    "Don't look at what you lost physically; look at the strength you gained internally.",
-    "Tomorrow brings better health and a more beautiful morning; believe in that.",
-    "Even trees shed their leaves to return green once more, and so will you.",
-    "Physical weakness is not a flaw; it is human nature. Strength is in your soul.",
-    "Every dose of medicine is a step toward wellness; every prayer shortens the distance.",
-    "Be grateful for every cell in your body working for you right now.",
-    "Don't despair; miracles happen to those who never stop trying.",
-    "Your psychological comfort is the primary driver for your physical recovery.",
-    "Make your pain the fuel for your creativity; many greats were born from agony.",
-    "Yourself deserves pampering and care, especially in times of weakness.",
-    "Remember that hardship doesn't last; wellness is coming like the break of dawn.",
-    "You are a warrior, and warriors don't give up after the first battle.",
-    "Your body will thank you one day for not giving up in this moment.",
-    "God's compensation isn't ordinary; it comes to make you forget the bitterness of all you lost.",
-    "What left you was never yours, and what is meant for you will never go to another.",
-    "Loss is painful, but it opens spaces in your soul that only God can fill.",
-    "When God takes something from you, He is preparing your hands to receive something greater.",
-    "Restoration is coming, in a way that never crossed your mind.",
-    "Don't cry over the ruins of the past; the future is building palaces of compensation for you.",
-    "Losing material things is the cheapest kind of loss, as long as your soul is fine.",
-    "Sometimes something beautiful leaves so something more beautiful can arrive; trust the Creator.",
-    "Every door closed in your face was protecting you from an unseen evil.",
-    "Loss teaches us the value of the moment; compensation teaches us the value of patience.",
-    "God will compensate you until you feel as if you never grieved for a day.",
-    "Patience with loss is a silent worship with an immeasurable reward.",
-    "Absence isn't always a loss; sometimes it is a survival.",
-    "Whoever loses a loved one, God will grant them a companion to fill their heart with peace.",
-    "Life is a wheel; today is loss, tomorrow is gain. Contentment is the real profit.",
-    "Don't grieve over what passed; if it were good, it would have stayed.",
-    "Real compensation is when God grants you peace of mind after a scattered soul.",
-    "Loss breaks us, but God's restoration reshapes us to be more beautiful.",
-    "God will wipe your heart with His kindness until you smile despite everything.",
-    "Every tear you shed in secret has a great compensation in public.",
-    "Rejoice; destiny hides what will delight your eyes.",
-    "The void left by those who departed will be filled by God with the light of serenity.",
-    "You are not alone; God is with you in every moment of heartbreak and loss.",
-    "Compensation isn't always another person; it could be priceless inner peace.",
-    "What was meant for you will come to you in your weakness; what wasn't won't be reached by your strength.",
-    "You walk under God's care, so do not fear the loss of anything.",
-    "Mending hearts is the trait of the great, and God is the greatest mender.",
-    "Smile, for God's compensation is amazing beyond imagination.",
-    "The end of the story is always happy; if it's not happy, it's not the end yet.",
-    "Safe Pulse PRO reminds you: You deserve the best, and recovery starts from within."
-]
+    # 1. قاعدة بيانات الاقتباسات الكاملة والمترجمة
+    all_quotes = {
+        "AR": [
+            "فشل علاقة لا يعني فشلك كإنسان، بل يعني أن هذا الفصل من حياتك قد انتهى لتبدأ فصلاً أجمل.",
+            "القلب الذي ينكسر، يلتئم ليصبح أقوى في مواجهة الخيبات القادمة.",
+            "من لا يعرف قيمتك وأنت معه، سيعرفها جيداً حين يراك تمضي بدونه.",
+            "لا تعتذر أبداً عن صدق مشاعرك، العيب فيمن لم يمتلك وعاءً كافياً لاحتوائها.",
+            "أحياناً يكسر الله قلبك لينقذ روحك من علاقة كانت ستدمرك تماماً.",
+            "الرحيل بكرامة هو انتصار عظيم لن تشعر بلذته إلا بعد حين.",
+            "أنت تستحق شخصاً يحارب ليحميك، لا شخصاً تحارب أنت لتبقى في حياته.",
+            "الحب لا يعني التضحية بكرامتك، فمن يحبك حقاً سيعزز كرامتك لا يهينها.",
+            "لا تجعل خيبة واحدة تحول قلبك إلى حجر، فالعالم لا يزال مليئاً بالأوفياء.",
+            "الوحدة أجمل بكثير من رفقة تجعلك تشعر أنك وحيد وأنت معهم.",
+            "تعلم فن الاستغناء، فليس كل من دخل حياتك جاء ليبقى.",
+            "النهايات هي في الحقيقة بدايات متنكرة، استعد لما هو قادم.",
+            "لا تبكِ على من باعك، بل اشكر الله لأنه كشف لك الحقيقة قبل فوات الأوان.",
+            "قيمتك لا يحددها رأي شخص فيك، بل يحددها تقديرك أنت لنفسك.",
+            "الشفاء من علاقة سامة يبدأ بقرارك أنك لن تعود ضحية مرة أخرى.",
+            "أعطِ نفسك وقتاً للحداد على ما مضى، ثم انهض كأنك لم تسقط أبداً.",
+            "القلب الذي يمنح الفرص كثيراً، يرحل مرة واحدة دون عودة.",
+            "أنت لست خياراً ثانياً لأحد، إما أن تكون الأول أو لا تكون.",
+            "الخروج من علاقة مؤذية هو ولادة جديدة لروحك.",
+            "لا تندم على معروف قدمته، فالنوايا الطيبة لا تضيع عند الله.",
+            "النسيان ليس نسيان الأحداث، بل نسيان الشعور الذي خلفته تلك الأحداث.",
+            "أحياناً نحتاج لفقدان أحدهم لكي نجد أنفسنا الضائعة.",
+            "الحياة قصيرة جداً لتقضيها في انتظار من لا ينتظرك.",
+            "كن كالنور، من أرادك سيسعى إليك، ومن فقدك سيعيش في الظلام.",
+            "الحب الحقيقي يبني ولا يهدم، يرمم ولا يكسر.",
+            "لا تقارن بدايتك بنهاية غيرك، لكل شخص مسار وقصة مختلفة.",
+            "الثقة التي تُكسر لا تُرمم، لكنها تعلمك كيف تختار بعناية في المرة القادمة.",
+            "سامح لترتاح أنت، وليس لأنهم يستحقون السماح.",
+            "الكرامة هي الخط الأحمر الذي لا يجب أن يتخطاه أي حب في العالم.",
+            "لا تستجدي الاهتمام، فالأشياء الجميلة تُمنح ولا تُطلب.",
+            "من يحبك سيهتم بكسرك، ومن يهواك سيزيدك انكساراً.",
+            "القوة ليست في عدم السقوط، بل في النهوض بعد كل سقطة.",
+            "اكتفِ بنفسك، فالاعتماد العاطفي هو سجن لروحك.",
+            "الحياة ستستمر بك أو بدونهم، فاختر أن تستمر وأنت شامخ.",
+            "كل وجع مررت به هو درس صامت يجعلك أكثر حكمة.",
+            "ضعف جسدك اليوم هو نداء لروحك لترتاح، فلا تقسُ على نفسك.",
+            "المرض ليس نهاية الطريق، بل هو محطة لتتعلم الامتنان لأبسط النعم.",
+            "صحتك هي استثمارك الأغلى، لا بأس أن تتوقف قليلاً لترمم جسدك.",
+            "كل ألم تشعر به الآن هو زكاة لجسدك، ورفعة لدرجاتك.",
+            "القوة النفسية قادرة على هزيمة أعتى الأمراض الجسدية.",
+            "لا تحزن على عجز مؤقت، فالقمر يمر بمراحل المحاق قبل أن يكتمل نوراً.",
+            "جسدك يحتاج لصبرك كما يحتاج للدواء، كن رحيماً به.",
+            "الإرادة هي نصف العلاج، والتفاؤل هو النصف الآخر.",
+            "الصحة تاج لا يراه إلا من مر بلحظات الضعف، حافظ على تاجك.",
+            "أنت قوي بما يكفي لتجاوز هذه الوعكة، غداً ستكون ذكرى.",
+            "التعافي رحلة وليس سباقاً، خذ وقتك بالكامل.",
+            "لا تسمح للمرض أن يسرق بريق عينيك، الأمل دواء لا يُباع في الصيدليات.",
+            "حتى في ذروة تعبك، تذكر أن هناك من ينتظر نهوضك بفارغ الصبر.",
+            "جسدك هو منزلك الوحيد، اعتنِ به بالحب والهدوء.",
+            "المرض يختبر معادن الناس من حولك، ويصقل معدنك أنت.",
+            "كل يوم تشرق فيه الشمس هو فرصة جديدة لتعافي أفضل.",
+            "لا تقلق، فالذي خلق الداء خلق الدواء، والثقة بالله هي الشفاء.",
+            "استمتع بلحظات الهدوء، فالسكينة هي بيئة التعافي المثالية.",
+            "أنت لست تشخيصاً طبياً، أنت روح عظيمة تقاوم ببطولة.",
+            "الصبر على الألم هو أعلى مراتب الشجاعة.",
+            "اعتبر فترة مرضك خلوة مع الله وإعادة ترتيب لأولوياتك.",
+            "ابتسامتك في وجه الألم هي نصف الانتصار عليه.",
+            "لا تنظر إلى ما فقدت صحياً، انظر إلى القوة التي اكتسبتها داخلياً.",
+            "الغد يحمل لك صحة أفضل وصباحاً أجمل، كن مؤمناً بذلك.",
+            "حتى الشجر يسقط ورقه ليعود مخضراً من جديد، وكذلك أنت.",
+            "الضعف الجسدي ليس عيباً، بل هو طبيعة البشر، القوة هي في روحك.",
+            "كل جرعة دواء هي خطوة نحو العافية، وكل دعاء هو تقصير للمسافة.",
+            "كن ممتناً لكل خلية في جسدك تعمل الآن لأجلك.",
+            "لا تيأس، فالمعجزات تحدث لأولئك الذين لا يتوقفون عن المحاولة.",
+            "راحتك النفسية هي المحرك الأول لتعافي جسدك.",
+            "اجعل من ألمك وقوداً لإبداعك، فالكثير من العظماء خرجوا من رحم الوجع.",
+            "نفسك تستحق منك الدلال والاهتمام، خاصة في أوقات الضعف.",
+            "تذكر أن الشدة لا تدوم، والعافية قادمة كفلق الصبح.",
+            "أنت محارب، والمحاربون لا يستسلمون من المعركة الأولى.",
+            "جسدك سيشكرك يوماً ما لأنك لم تستسلم في هذه اللحظة.",
+            "عوض الله لا يأتي عادياً، بل يأتي ليُنسيك مرارة كل ما فقدت.",
+            "ما ذهب منك لم يكن لك من البداية، وما هو لك لن يذهب لغيرك.",
+            "الفقد موجع، لكنه يفتح في روحك مساحات لن يملأها إلا الله.",
+            "عندما يأخذ الله منك شيئاً، فإنه يهيئ يديك لاستقبال شيء أعظم.",
+            "الجبر قادم، وبطريقة لم تخطر على بالك أبداً.",
+            "لا تبكِ على أطلال الماضي، فالمستقبل يبني لك قصوراً من العوض.",
+            "خسارة الأشياء المادية هي أرخص أنواع الخسائر، طالما روحك بخير.",
+            "أحياناً يرحل الجميل ليأتي الأجمل، ثق في تدبير الخالق.",
+            "كل باب أُغلق في وجهك كان يحميك من شر لا تراه.",
+            "الفقد يعلمنا قيمة اللحظة، والتعويض يعلمنا قيمة الصبر.",
+            "سيعوضك الله حتى تظن أنك لم تحزن يوماً.",
+            "الصبر على الفقد هو عبادة صامتة أجرها بغير حساب.",
+            "الغياب ليس دائماً خسارة، أحياناً يكون نجاة.",
+            "من فقد غاليًا، سيرزقه الله أنيساً يملأ قلبه طمأنينة.",
+            "الحياة دولاب، اليوم فقد وغداً وجد، والرضا هو المكسب الحقيقي.",
+            "لا تحزن على ما فات، فلو كان خيراً لبقي.",
+            "العوض الحقيقي هو أن يرزقك الله راحة البال بعد شتات الروح.",
+            "الفقد يكسرنا، لكن جبر الله يعيد تشكيلنا لنصبح أجمل.",
+            "سيمسح الله على قلبك بلطفه حتى تبتسم رغماً عن كل شيء.",
+            "كل دمعة سقطت منك في الخفاء، لها عوض كبير في العلن.",
+            "استبشر خيراً، فالأقدار تخبئ لك ما يقر عينك.",
+            "الفراغ الذي تركه الراحلون، سيملؤه الله بنور السكينة.",
+            "لست وحدك، فالله معك في كل لحظة انكسار وفقد.",
+            "العوض ليس دائماً شخصاً آخر، قد يكون سلاماً داخلياً لا يُقدّر بثمن.",
+            "ما كان لك سيأتيك على ضعفك، وما ليس لك لن تناله بقوتك.",
+            "أنت تسير في رعاية الله، فلا تخف من ضياع شيء.",
+            "جبر القلوب من شيم العظماء، والله هو أعظم الجابرين.",
+            "ابتسم، فعوض الله مدهش لدرجة تفوق الخيال.",
+            "نهاية القصة دائماً سعيدة، إذا لم تكن سعيدة فهي ليست النهاية بعد.",
+            "Safe Pulse PRO يذكرك دائماً: أنت تستحق الأفضل، والتعافي يبدأ من الداخل."
+        ],
+        "EN": [
+            "A relationship failure does not define you as a human; it simply means this chapter has ended for a better one to begin.",
+            "A broken heart heals to become much stronger in the face of all future disappointments.",
+            "Those who do not recognize your value while you are present will certainly realize it once they see you moving on.",
+            "Never feel the need to apologize for the sincerity of your feelings; the fault lies with those who could not contain them.",
+            "Sometimes life breaks your heart just to save your soul from a relationship that would have eventually destroyed you.",
+            "Walking away with your dignity intact is a magnificent victory that you will only truly appreciate after some time.",
+            "You deserve a partner who fights to protect you, not someone you constantly have to fight for just to remain in their life.",
+            "True love never requires you to sacrifice your dignity; those who truly love you will always cherish and uphold it.",
+            "Do not allow a single disappointment to turn your heart into stone; the world is still filled with many loyal souls.",
+            "Loneliness is far more beautiful than being in the company of people who make you feel completely alone.",
+            "Master the art of letting go, because not everyone who enters your life is meant to stay forever.",
+            "Endings are actually beautiful beginnings in disguise; keep yourself ready for the wonderful things that are coming.",
+            "Do not cry over someone who abandoned you; instead, thank life for revealing the truth before it was too late.",
+            "Your worth is never determined by someone else’s opinion of you; it is defined solely by how much you value yourself.",
+            "Healing from a toxic relationship truly begins at the moment you decide you will never be a victim again.",
+            "Give yourself the necessary time to grieve what has passed, then stand up as if you have never fallen before.",
+            "The heart that gives too many chances eventually leaves once and for all without ever looking back.",
+            "You are never a second choice for anyone; you should either be the first priority or not exist in their life at all.",
+            "Escaping an abusive or harmful relationship is nothing less than a brand new birth for your weary soul.",
+            "Never regret any kindness you have shown; good intentions are never lost in the eyes of the universe.",
+            "Forgetting is not about erasing events from memory, but rather about losing the painful feeling those events left behind.",
+            "Sometimes we honestly need to lose someone else in order to finally find our own lost selves.",
+            "Life is far too short to spend it waiting for someone who is not waiting for you in return.",
+            "Be like the light; those who want you will find their way to you, and those who lose you will remain in darkness.",
+            "Real love is meant to build you up, not tear you down; it is meant to repair you, not break you.",
+            "Never compare your beginning to someone else's end; every person has their own unique path and story.",
+            "Trust that has been broken can never be fully restored, but it teaches you how to choose much more carefully next time.",
+            "Forgive others so that you can find your own peace, not necessarily because they deserve to be forgiven.",
+            "Dignity is the ultimate red line that no love in this world should ever be allowed to cross.",
+            "Do not beg for someone’s attention; the most beautiful things in life are given freely and never requested.",
+            "Someone who truly loves you will care about your pain; someone who only desires you will only add to your brokenness.",
+            "Strength is not the absence of falling; it is the ability to rise up again after every single fall.",
+            "Be enough for yourself; emotional dependency is nothing more than a prison for your free spirit.",
+            "Life will continue with or without them; therefore, choose to move forward with your head held high.",
+            "Every single pain you have endured is a silent lesson that makes you much wiser than you were before.",
+            "The weakness of your body today is a call for your soul to rest; do not be too hard on yourself.",
+            "Illness is not the end of the road; it is a station where you learn to appreciate even the simplest blessings.",
+            "Your health is your most precious investment; it is perfectly fine to stop and repair your body for a while.",
+            "Every bit of pain you feel right now is a purification for your body and an elevation of your status.",
+            "Psychological strength is fully capable of defeating even the most difficult physical illnesses.",
+            "Do not be saddened by temporary weakness; the moon goes through phases of darkness before it shines brightly.",
+            "Your body needs your patience just as much as it needs medicine; be exceptionally kind and gentle with it.",
+            "Willpower is half of the cure, and maintaining a positive outlook is the other half.",
+            "Health is a crown that only those who have experienced weakness can see; protect your crown at all costs.",
+            "You are strong enough to overcome this temporary setback; tomorrow it will be nothing more than a memory.",
+            "Recovery is a long journey and not a quick race; allow yourself to take all the time you need.",
+            "Do not allow illness to steal the light from your eyes; hope is a medicine that cannot be bought in any pharmacy.",
+            "Even at the peak of your exhaustion, remember there are those waiting for you to rise with great anticipation.",
+            "Your body is the only home you truly have; take care of it with absolute love and quiet patience.",
+            "Illness tests the metal of the people around you and polishes your own character in the process.",
+            "Every day the sun rises is a brand new opportunity for a much better and faster recovery.",
+            "Do not worry; the one who created the disease also created the cure, and trust is the ultimate healing.",
+            "Enjoy the moments of silence and calm; serenity is the perfect environment for deep recovery.",
+            "You are not a medical diagnosis; you are a magnificent soul fighting with great heroism and courage.",
+            "Patience in the face of physical pain is one of the highest forms of human bravery.",
+            "Consider your period of illness as a private retreat and a chance to reorganize your life’s priorities.",
+            "Your smile in the face of pain is already half of the victory over your physical suffering.",
+            "Do not look at what you have lost health-wise; instead, look at the internal strength you have gained.",
+            "Tomorrow brings with it better health and a more beautiful morning; keep your faith strong in that.",
+            "Even trees lose their leaves only to return green and vibrant once again; you will do the same.",
+            "Physical weakness is not a flaw; it is the nature of humans. True power resides within your soul.",
+            "Every dose of medicine is a step toward wellness, and every prayer shortens the distance to health.",
+            "Be truly grateful for every single cell in your body that is working hard for you right now.",
+            "Never give up; miracles happen specifically for those who never stop trying and believing.",
+            "Your psychological comfort is the primary engine for the physical recovery of your body.",
+            "Make your pain the fuel for your creativity; many great people were born from the womb of suffering.",
+            "Your self deserves pampering and care from you, especially during times of weakness.",
+            "Remember that hardship never lasts forever, and wellness is coming just like the break of dawn.",
+            "You are a true warrior, and warriors do not surrender simply because they lost the first battle.",
+            "Your body will thank you one day because you did not give up on it during this difficult moment.",
+            "God’s compensation never comes in an ordinary way; it comes to make you forget the bitterness of all you lost.",
+            "What left you was never yours to begin with; and what is meant for you will never go to anyone else.",
+            "Loss is painful, but it opens up spaces in your soul that only peace and faith can eventually fill.",
+            "When life takes something from you, it is simply preparing your hands to receive something much greater.",
+            "The mending of your heart is coming, and in a way that has never even crossed your mind.",
+            "Do not cry over the ruins of the past; the future is building palaces of compensation for you.",
+            "Losing material things is the cheapest kind of loss, as long as your spirit remains well and intact.",
+            "Sometimes the beautiful leaves so that the most beautiful can arrive; trust in the divine plan.",
+            "Every door that was closed in your face was actually protecting you from a harm you could not see.",
+            "Loss teaches us the value of the moment, while compensation teaches us the true value of patience.",
+            "Life will compensate you so much that you will eventually feel as if you have never been sad a day in your life.",
+            "Patience during loss is a silent form of worship whose reward is beyond any human calculation.",
+            "Absence is not always a loss; sometimes it is a complete and necessary rescue from harm.",
+            "Whoever has lost someone dear will be granted a companion by life who fills their heart with tranquility.",
+            "Life is a cycle; today there is loss and tomorrow there is gain; true contentment is the real profit.",
+            "Do not be sad about what has passed; for if it had been good for you, it would have stayed.",
+            "True compensation is being granted peace of mind after your soul has been through a state of scatteredness.",
+            "Loss may break us, but divine mending reshapes us to become more beautiful than ever before.",
+            "Kindness will wipe over your heart until you find yourself smiling despite everything that happened.",
+            "Every tear that fell from you in secret has a massive compensation waiting for you in the open.",
+            "Be optimistic; destiny is hiding for you exactly what will bring joy and comfort to your eyes.",
+            "The void left by those who departed will be filled with the brilliant light of inner serenity.",
+            "You are never alone; support is with you in every single moment of brokenness and loss.",
+            "Compensation is not always another person; it could be an internal peace that is absolutely priceless.",
+            "What was meant for you will reach you despite your weakness; and what was not will not be reached by your strength.",
+            "You are walking under a great care; therefore, do not fear the loss of anything in this journey.",
+            "Mending hearts is the quality of the great, and the ultimate mending comes from the source of life.",
+            "Smile, because the coming compensation is so amazing that it will far exceed your imagination.",
+            "The end of the story is always happy; if it is not happy yet, then it is simply not the end.",
+            "Safe Pulse PRO always reminds you: You deserve the absolute best, and healing truly starts from within."
+        ]
+    }
 
+    # 2. قاموس ترجمة نصوص الواجهة
+    ui_translations = {
+        "AR": {
+            "title": "✨ مفكرتك الذكية",
+            "manage": "### 🛠️ إدارة السجل",
+            "show": "إظهار سجل المحادثات",
+            "clear": "🗑️ مسح السجل نهائياً",
+            "success": "تم الحذف بنجاح!",
+            "support": "💖 دعم نفسي",
+            "hidden": "سجل المحادثات مخفي الآن.",
+            "input": "اكتب فكرة جديدة..."
+        },
+        "EN": {
+            "title": "✨ Smart Diary",
+            "manage": "### 🛠️ Manage History",
+            "show": "Show Chat History",
+            "clear": "🗑️ Clear History Permanently",
+            "success": "Deleted successfully!",
+            "support": "💖 Psychological Support",
+            "hidden": "Chat history is currently hidden.",
+            "input": "Write a new idea..."
+        }
+    }
+
+    # جلب الترجمة المناسبة للغة المختارة
+    t = ui_translations[current_lang]
+    active_quotes = all_quotes[current_lang]
+
+    # تنسيقات الواجهة (CSS) مع تطهير الرموز
     st.markdown(f"""
         <style>
             [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] {{ display: none !important; }}
             .stChatInput {{ border: 2px solid {BLUE} !important; border-radius: 25px !important; box-shadow: 0 0 15px {BLUE} !important; background: #000 !important; }}
             [data-testid="stChatMessage"] {{ background-color: rgba(0, 0, 0, 0.7) !important; border: 1px solid {BLUE} !important; box-shadow: 0 0 10px {BLUE} !important; border-radius: 15px !important; margin-bottom: 10px !important; color: white !important; }}
             div.stButton > button[key="psych_btn"] {{ background-color: #000 !important; color: #FF007F !important; border: 2px solid #FF007F !important; box-shadow: 0 0 15px #FF007F !important; border-radius: 20px !important; width: 100% !important; font-weight: bold !important; text-shadow: 0 0 5px #FF007F !important; }}
-            .quote-card {{ background-color: #000; border: 2px solid #FF007F; padding: 25px; border-radius: 15px; text-align: center; color: white; text-shadow: 0 0 10px #FF007F; box-shadow: 0 0 20px #FF007F, inset 0 0 10px #FF007F; margin-bottom: 25px; font-size: 1.2rem; }}
+            .quote-card {{ background-color: #000; border: 2px solid #FF007F; padding: 25px; border-radius: 15px; text-align: center; color: white; text-shadow: 0 0 10px #FF007F; box-shadow: 0 0 20px #FF007F, inset 0 0 10px #FF007F; margin-bottom: 25px; font-size: 1.2rem; line-height: 1.6; }}
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown(f'<h1 style="text-align:center; color:{BLUE}; text-shadow:0 0 20px {BLUE};">✨ مفكرتك الذكية</h1>', unsafe_allow_html=True)
+    # عرض العنوان المترجم
+    st.markdown(f'<h1 style="text-align:center; color:{BLUE}; text-shadow:0 0 20px {BLUE};">{t["title"]}</h1>', unsafe_allow_html=True)
 
-    st.markdown("### 🛠️ إدارة السجل")
+    st.markdown(t["manage"])
+    
     col_manage1, col_manage2 = st.columns(2)
-
     with col_manage1:
-        show_history = st.toggle("إظهار سجل المحادثات", value=True, key="toggle_history")
+        show_history = st.toggle(t["show"], value=True, key="toggle_history")
 
     with col_manage2:
-        # زر مسح السجل يظل في الأعلى بمفرده
-        if st.button("🗑️ مسح السجل نهائياً", key="clear_vault_btn"):
+        if st.button(t["clear"], key="clear_vault_btn"):
             st.session_state.messages = []
             st.session_state.secure_vault["chat_history"] = []
             save_user_data(st.session_state.current_user, st.session_state.secure_vault)
-            st.success(" تم الحذف بنجاح !" if st.session_state.lang == "AR" else " Deleted successfully !")
+            st.success(t["success"])
             st.rerun()
 
-        st.write("---") # خط فاصل بسيط
+    # زر الدعم النفسي المترجم
+    if st.button(t["support"], key="psych_btn"):
+        import random
+        selected_quote = random.choice(active_quotes)
+        st.markdown(f'<div class="quote-card">{selected_quote}</div>', unsafe_allow_html=True)
 
-        # إنشاء عمودين فرعيين لوضع الزرين قصاد بعض
-        sub_c1, sub_c2 = st.columns(2)
-        
-        current_lang = st.session_state.get('lang', 'AR')
-
-        with sub_c2:
-            # زر دعم نفسي
-            psych_label = "❤️ دعم نفسي" if current_lang == "AR" else "❤️ Mental Support"
-            # ملاحظة: لكي يعمل زر الدعم النفسي كأكشن، سنستخدم زر ستريمليت ونطبق عليه الاستايل
-            if st.button(psych_label, key="psych_btn_new"):
-                import random
-                current_quotes = SUPPORT_QUOTES.get(current_lang, SUPPORT_QUOTES["AR"])
-                selected = random.choice(current_quotes)
-                
-                intro = "نبض الأمان يذكرك :" if current_lang == "AR" else "Safe Pulse reminds you :"
-                st.session_state.last_quote = {"intro": intro, "text": selected}
-
-        # عرض الكارت المشع أسفل الأزرار في حال تم الضغط على الدعم النفسي
-        if "last_quote" in st.session_state:
-            q = st.session_state.last_quote
-            alignment = "right" if current_lang == "AR" else "left"
-            direction = "rtl" if current_lang == "AR" else "ltr"
-            st.markdown(f"""
-                <div class="quote-card" style="direction: {direction}; text-align: {alignment};">
-                    <div style="color: #00d4ff; font-weight: bold; margin-bottom: 8px;">{q['intro']}</div>
-                    <div style="color: white; font-style: italic;">"{q['text']}"</div>
-                </div>
-            """, unsafe_allow_html=True)
-
+    # عرض الرسائل المخزنة
     if show_history:
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
     else:
-        st.info("سجل المحادثات مخفي الآن.")
+        st.info(t["hidden"])
 
-    if prompt := st.chat_input("سرك ف بير ..."):
+    # منطقة إدخال النص المترجمة
+    if prompt := st.chat_input(t["input"]):
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.session_state.secure_vault["chat_history"] = st.session_state.messages
         save_user_data(st.session_state.current_user, st.session_state.secure_vault)
         st.rerun()
 
 elif page == "SET":
-    # --- 1. نظام التحميل الذكي (يتم مرة واحدة فقط لضمان استقرار الجلسة) ---
-    if "settings_loaded" not in st.session_state:
-        try:
-            doc = db.collection("users").document(st.session_state.current_user).get()
-            if doc.exists:
-                raw_vault = doc.to_dict().get("vault")
-                v_data = json.loads(cipher.decrypt(raw_vault.encode()).decode())
-                
-                # تخزين أرقام الهواتف في الجلسة لربطها بالحقول
-                st.session_state.v_n1 = v_data.get("fav_person_1_name", "")
-                st.session_state.v_p1 = v_data.get("fav_person_1_phone", "")
-                st.session_state.v_n2 = v_data.get("fav_person_2_name", "")
-                st.session_state.v_p2 = v_data.get("fav_person_2_phone", "")
-                st.session_state.at_key = v_data.get("anti_theft", False)
-                st.session_state.fall_key = v_data.get("fall_detection", False)
-                
-                # بيانات الملف الطبي
-                h = v_data.get("health_info", {})
-                st.session_state.sug_det = h.get("sugar", "سليم")
-                st.session_state.pre_det = h.get("pressure", "طبيعي")
-                st.session_state.he_det = h.get("heart", "سليم")
-                st.session_state.all_det = h.get("allergy", "لا يوجد")
-                st.session_state.blood_type_key = h.get("blood_type", "O+")
-                
-                # ضبط وضعية الراديو
-                st.session_state.has_sugar_key = "نعم" if st.session_state.sug_det != "سليم" else "لا"
-                st.session_state.has_pressure_key = "نعم" if st.session_state.pre_det != "طبيعي" else "لا"
-                st.session_state.has_heart_key = "نعم" if st.session_state.he_det != "سليم" else "لا"
-                st.session_state.has_allergy_key = "نعم" if st.session_state.all_det != "لا يوجد" else "لا"
-                
-                st.session_state.settings_loaded = True
-            else:
-                st.session_state.settings_loaded = True
-        except Exception:
-            st.session_state.settings_loaded = True
-
-    # --- 2. تنسيق الواجهة ---
     st.markdown(f"""
         <style>
             .set-container {{
@@ -1359,105 +1113,126 @@ elif page == "SET":
                 border: 2px solid {BLUE};
                 border-radius: 20px;
                 padding: 35px;
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
                 direction: {'rtl' if st.session_state.lang == 'AR' else 'ltr'};
             }}
-            .set-header {{ color: {BLUE}; font-weight: 800; text-shadow: 0 0 15px {BLUE}; text-align: center; font-size: 2.2rem; }}
-            .stTextInput>div>div>input, .stTextArea>div>div>textarea {{
+            .set-header {{
+                color: {BLUE};
+                font-weight: 800;
+                text-shadow: 0 0 15px {BLUE};
+                margin-bottom: 30px;
+                text-align: center;
+                font-size: 2.5rem;
+            }}
+            .info-card {{
+                background: rgba(0, 212, 255, 0.05);
+                border-left: 4px solid {BLUE};
+                padding: 15px;
+                border-radius: 10px;
+                margin-top: 10px;
+                border: 1px solid rgba(0, 212, 255, 0.2);
+                animation: fadeIn 0.5s ease-in-out;
+            }}
+            @keyframes fadeIn {{
+                from {{ opacity: 0; transform: translateY(-10px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+            .stTextInput>div>div>input {{
                 background-color: rgba(0, 0, 0, 0.3) !important;
                 border: 1px solid {BLUE} !important;
                 color: white !important;
             }}
-            div.stButton > button {{
-                background-color: #000000 !important;
+            .stSubheader h3 {{
                 color: {BLUE} !important;
-                border: 2px solid {BLUE} !important;
-                width: 100%;
-                font-weight: bold;
-                height: 50px;
-                border-radius: 12px;
+                text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
             }}
         </style>
     """, unsafe_allow_html=True)
 
-    # --- 3. دالة الحفظ "الآمنة للغاية" (تدمج البيانات ولا تمسح القديم) ---
-    def force_save_settings():
-        try:
-            # أولاً: نجلب النسخة الحالية من السحابة لضمان عدم مسح الشات أو السجلات
-            doc_ref = db.collection("users").document(st.session_state.current_user)
-            current_doc = doc_ref.get()
-            
-            if current_doc.exists:
-                raw_vault = current_doc.to_dict().get("vault")
-                # فك تشفير البيانات القديمة (التي تحتوي على الشات والسجلات)
-                old_vault = json.loads(cipher.decrypt(raw_vault.encode()).decode())
-            else:
-                old_vault = {}
-
-            # ثانياً: تحديث الأجزاء المخصصة للإعدادات فقط داخل القاموس القديم
-            old_vault["fav_person_1_name"] = st.session_state.v_n1
-            old_vault["fav_person_1_phone"] = st.session_state.v_p1
-            old_vault["fav_person_2_name"] = st.session_state.v_n2
-            old_vault["fav_person_2_phone"] = st.session_state.v_p2
-            old_vault["anti_theft"] = st.session_state.at_key
-            old_vault["fall_detection"] = st.session_state.fall_key
-            
-            # تحديث الملف الطبي
-            old_vault["health_info"] = {
-                "sugar": st.session_state.sug_det if st.session_state.has_sugar_key == "نعم" else "سليم",
-                "pressure": st.session_state.pre_det if st.session_state.has_pressure_key == "نعم" else "طبيعي",
-                "heart": st.session_state.he_det if st.session_state.has_heart_key == "نعم" else "سليم",
-                "allergy": st.session_state.all_det if st.session_state.has_allergy_key == "نعم" else "لا يوجد",
-                "blood_type": st.session_state.blood_type_key
-            }
-
-            # ملاحظة: "ai_chat_history" و "personal_chat" سيبقون كما هم في old_vault دون تغيير
-
-            # ثالثاً: التشفير والرفع النهائي
-            encrypted_data = cipher.encrypt(json.dumps(old_vault).encode()).decode()
-            doc_ref.update({"vault": encrypted_data})
-            
-            st.success("✅ تم حفظ أرقام الهواتف والبيانات الطبية وتأمين الشات بنجاح!")
-        except Exception as e:
-            st.error(f"❌ خطأ فني أثناء المزامنة: {e}")
-
-    # --- 4. تصميم الصفحة ---
+   # تأكد أن هذا السطر وما يليه يقع تحت تعريف الدالة المناسبة بنفس مستوى الإزاحة
     st.markdown(f'<div class="set-container"><h1 class="set-header">⚙️ {L["nav"][3]}</h1>', unsafe_allow_html=True)
 
-    col1, col2 = st.columns(2)
+    col_set1, col_set2 = st.columns(2)
 
-    with col1:
-        st.subheader("👥 أرقام الطوارئ")
-        st.text_input("الاسم الأول", key="v_n1")
-        st.text_input("الهاتف الأول", key="v_p1")
-        st.text_input("الاسم الثاني", key="v_n2")
-        st.text_input("الهاتف الثاني", key="v_p2")
+    with col_set1:
+        st.subheader("👥 " + ("الأشخاص المفضلين" if st.session_state.lang == "AR" else "Emergency Contacts"))
+        vault["fav_person_1_name"] = st.text_input("اسم الشخص المفضل (1)", vault.get("fav_person_1_name"))
+        vault["fav_person_1_phone"] = st.text_input("رقم هاتف الشخص (1)", vault.get("fav_person_1_phone"))
+        vault["fav_person_2_name"] = st.text_input("اسم الشخص المفضل (2)", vault.get("fav_person_2_name"))
+        vault["fav_person_2_phone"] = st.text_input("رقم هاتف الشخص (2)", vault.get("fav_person_2_phone"))
+        
+        vault["blood"] = st.selectbox("فصيلة الدم", ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"])
+        
         st.markdown("---")
-        st.toggle("🚨 استغاثة السرقة", key="at_key")
-        st.toggle("🚑 استغاثة الإغماء", key="fall_key")
-
-    with col2:
-        st.subheader("🏥 الملف الطبي")
-        st.radio("🍬 سكري؟", ["لا", "نعم"], key="has_sugar_key", horizontal=True)
-        if st.session_state.has_sugar_key == "نعم":
-            st.text_input("تفاصيل السكر", key="sug_det")
+        st.subheader("🛡️ " + ("أنظمة الاستغاثة الذكية" if st.session_state.lang == "AR" else "Smart Rescue Systems"))
         
-        st.radio("💓 ضغط؟", ["لا", "نعم"], key="has_pressure_key", horizontal=True)
-        if st.session_state.has_pressure_key == "نعم":
-            st.text_input("تفاصيل الضغط", key="pre_det")
+        vault["anti_theft"] = st.toggle("🚨 تفعيل استغاثة السرقة", value=vault.get("anti_theft", False))
+        if vault["anti_theft"]:
+            st.markdown(f"""
+                <div class="info-card">
+                    <b style="color:{BLUE};">🔍 تعرف ماذا يفعل هذا النظام؟</b><br>
+                    عند رصد حركة جري مفاجئة أو سحب الهاتف من اليد بقوة، يقوم النظام فوراً بتشفير كافة بياناتك الحساسة وإرسال إحداثيات موقعك الأخير لجهات الاتصال المفضلة.
+                </div>
+            """, unsafe_allow_html=True)
 
-        st.radio("⚠️ حساسية؟", ["لا", "نعم"], key="has_allergy_key", horizontal=True)
-        if st.session_state.has_allergy_key == "نعم":
-            st.text_area("تفاصيل الحساسية", key="all_det")
+        vault["fall_detection"] = st.toggle("🚑 تفعيل استغاثة الاغماء", value=vault.get("fall_detection", False))
+        if vault["fall_detection"]:
+            st.markdown(f"""
+                <div class="info-card">
+                    <b style="color:{BLUE};">🔍 تعرف ماذا يفعل هذا النظام؟</b><br>
+                    يقوم البرنامج بمراقبة حساسات التسارع؛ وفي حالة سقوط الهاتف بشكل مفاجئ مع انعدام الحركة، يتم إرسال رسالة تحذير فورية.
+                </div>
+            """, unsafe_allow_html=True)
         
-        st.selectbox("🩸 فصيلة الدم:", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], key="blood_type_key")
+    with col_set2:
+        st.subheader("🧬 " + ("الملف الصحي" if st.session_state.lang == "AR" else "Medical Profile"))
+        
+        # 1. الحساسية
+        vault["has_allergy"] = st.radio("هل تعاني من حساسية؟", ["No / لا", "Yes / نعم"], key="radio_allergy")
+        if "Yes" in vault["has_allergy"]:
+            vault["allergy_type"] = st.text_input("حدد نوع الحساسية (مثلاً: لاكتوز، بنسلين)", vault.get("allergy_type", ""))
+            st.info("💡 شفاك الله وعافاك، يرجى الحذر دائماً.")
+
+        # 2. السكر
+        vault["has_diabetes"] = st.radio("هل تعاني من السكر؟", ["No / لا", "Yes / نعم"], key="radio_diabetes")
+        if "Yes" in vault["has_diabetes"]:
+            vault["diabetes_type"] = st.text_input("حدد النوع أو النسبة المعتادة", vault.get("diabetes_type", ""))
+            st.success("🤲 أسأل الله العظيم رب العرش العظيم أن يشفيك.")
+
+        # 3. الضغط
+        vault["has_pressure"] = st.radio("هل تعاني من ضغط الدم؟", ["No / لا", "Yes / نعم"], key="radio_pressure")
+        if "Yes" in vault["has_pressure"]:
+            vault["pressure_details"] = st.text_input("وصف الحالة (مثلاً: ضغط مرتفع مزمن)", vault.get("pressure_details", ""))
+            st.success("🤲 اللهم رب الناس أذهب البأس، اشفِ أنت الشافي.")
+
+        # 4. القلب
+        vault["has_heart"] = st.radio("هل تعاني من أمراض القلب؟", ["No / لا", "Yes / نعم"], key="radio_heart")
+        if "Yes" in vault["has_heart"]:
+            vault["heart_details"] = st.text_input("حدد نوع الإصابة أو العملية السابقة", vault.get("heart_details", ""))
+            st.success("🤲 شفاءً لا يغادر سقماً، طهور إن شاء الله.")
+        
+        st.markdown("---")
+        st.subheader("💧 " + ("نظام ترطيب الجسم" if st.session_state.lang == "AR" else "Hydration System"))
+        vault["water_reminder"] = st.toggle("تفعيل تذكير المياه", value=vault.get("water_reminder", True))
+        
+        if vault.get("water_reminder"):
+            water_count = vault.get("water_glasses", 0)
+            st.markdown(f"""
+                <div style="background:rgba(0,212,255,0.1); padding:15px; border-radius:15px; text-align:center; border:1px solid {BLUE};">
+                    <h4 style="color:white; margin:0;">🥤 حصتك اليومية الحالية</h4>
+                    <span style="font-size:2rem; color:{BLUE}; font-weight:bold;">{water_count}</span> <small>أكواب</small>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("➕ شربت الآن"):
+                vault["water_glasses"] = water_count + 1
+                st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("💾 حفظ وتأمين كافة البيانات"):
-        force_save_settings()
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    if st.button(L["save_btn"], use_container_width=True): 
+        save_user_data(st.session_state.current_user, vault)
+        st.balloons()
+        st.success("✅ تم حفظ إعداداتك بنجاح ")
 elif page == "ABOUT":
     ABOUT_DATA = {
         "AR": {
@@ -1496,7 +1271,6 @@ elif page == "ABOUT":
 
     lang = st.session_state.lang
     content = ABOUT_DATA[lang]
-    BLUE = "#00d4ff"  # تأكد من تعريف اللون إذا لم يكن معرفاً
 
     st.markdown(f"""
         <style>
@@ -1504,28 +1278,6 @@ elif page == "ABOUT":
             .category-card {{ background: rgba(0, 212, 255, 0.03); border: 1px solid {BLUE}; border-radius: 15px; padding: 18px; margin-bottom: 25px; height: 230px; box-shadow: 0 0 12px rgba(0, 212, 255, 0.1); transition: 0.4s ease-in-out; }}
             .category-card:hover {{ box-shadow: 0 0 25px rgba(0, 212, 255, 0.4); transform: scale(1.03); background: rgba(0, 212, 255, 0.07); }}
             .feature-item {{ font-size: 0.85rem; margin-bottom: 5px; color: #e6edf3; text-align: {'right' if lang == 'AR' else 'left'}; }}
-            
-            /* تصميم زر الواتساب الحقيقي */
-            .whatsapp-btn {{
-                display: block;
-                width: 100%;
-                background-color: #25D366;
-                color: white !important;
-                text-align: center;
-                padding: 15px;
-                border-radius: 50px;
-                font-size: 20px;
-                font-weight: bold;
-                text-decoration: none !important;
-                box-shadow: 0 0 15px #25D366;
-                transition: 0.3s;
-                margin: 20px 0;
-            }}
-            .whatsapp-btn:hover {{
-                box-shadow: 0 0 30px #25D366;
-                transform: scale(1.02);
-                background-color: #1ebe57;
-            }}
         </style>
     """, unsafe_allow_html=True)
 
@@ -1543,26 +1295,23 @@ elif page == "ABOUT":
                     {feat_html}
                 </div>
             """, unsafe_allow_html=True)
-
+    st.markdown(f'<h1 style="text-align:center; color:{BLUE};"></h1>', unsafe_allow_html=True)
+    
     st.write("برنامج Safe Pulse PRO هو رفيقك الذكي للسلامة والإسعافات الأولية.")
 
-    # --- إعدادات الواتساب ---
     whatsapp_number = "201153897231"
     whatsapp_url = f"https://wa.me/{whatsapp_number}"
-    whatsapp_text = "💬 تواصل مع المبرمج عبر واتساب" if lang == "AR" else "💬 Contact Developer via WhatsApp"
 
-    # --- عرض الزر الحقيقي (رابط بتنسيق زر) ---
-    st.markdown(f'<a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">{whatsapp_text}</a>', unsafe_allow_html=True)
-
-    # تسجيل التتبع بشكل صامت عند تحميل الصفحة (بدون الحاجة لضغط الزر)
-    if db:
-        try:
-            current_user = st.session_state.get('current_user', 'unknown')
-            db.collection("admin_logs").document("contact_page_views").set({
-                current_user: datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }, merge=True)
-        except:
-            pass
+    st.markdown(f"""
+    <style>
+    .whatsapp-btn {{ background-color: #25D366; color: white !important; padding: 15px 25px; text-align: center; text-decoration: none; display: inline-block; font-size: 18px; font-weight: bold; border-radius: 50px; box-shadow: 0 0 15px #25D366; transition: 0.3s; border: none; cursor: pointer; margin: 20px auto; display: block; width: fit-content; }}
+    .whatsapp-btn:hover {{ box-shadow: 0 0 30px #25D366; transform: scale(1.05); }}
+    </style>
+    
+    <a href="{whatsapp_url}" target="_blank" class="whatsapp-btn">
+        💬 تواصل مع المبرمج عبر واتساب
+    </a>
+    """, unsafe_allow_html=True)
 
     st.markdown(f"""
             <div style="margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:25px; text-align:center;">
