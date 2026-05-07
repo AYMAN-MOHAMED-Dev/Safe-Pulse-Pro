@@ -37,7 +37,7 @@ def get_ai_response(u_input):
         try:
             genai.configure(api_key=current_key)
             # استخدام موديل مستقر ومعروف
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(full_prompt)
             return response.text
         except Exception as e:
