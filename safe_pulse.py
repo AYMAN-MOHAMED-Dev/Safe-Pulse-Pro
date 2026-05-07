@@ -13,43 +13,57 @@ from cryptography.fernet import Fernet
 from streamlit_js_eval import streamlit_js_eval, get_geolocation
 import string
 
-# --- 1. دوال الذكاء الاصطناعي المحسنة ---
+# --- 1. محرك الذكاء الاصطناعي (Gemini) ---
 def get_ai_response(u_input):
-    """جلب رد الذكاء الاصطناعي مع معالجة مفاتيح API المتعددة"""
-    # محاولة جلب المفاتيح من st.secrets بمرونة
-    raw_keys = st.secrets.get("GEMINI_KEYS", [])
+    """جلب رد الذكاء الاصطناعي مع معالجة مرنة لمفاتيح الأسرار"""
+    keys_pool = []
     
-    # تحويل البيانات إلى قائمة سواء كانت dict أو list
-    if isinstance(raw_keys, dict):
-        keys_pool = raw_keys.get("keys", [])
-    else:
-        keys_pool = raw_keys
+    # محاولة جلب المفاتيح من st.secrets بأكثر من طريقة لضمان المرونة
+    try:
+        if "GEMINI_KEYS" in st.secrets:
+            raw_data = st.secrets["GEMINI_KEYS"]
+            if isinstance(raw_data, dict) and "keys" in raw_data:
+                keys_pool = raw_data["keys"]
+            elif isinstance(raw_data, list):
+                keys_pool = raw_data
+            elif isinstance(raw_data, dict):
+                keys_pool = list(raw_data.values())
+    except Exception:
+        pass
 
     if not keys_pool: 
-        return "❌ خطأ: لم يتم العثور على مفاتيح API في إعدادات Secrets."
+        return "❌ خطأ: لم يتم العثور على مفاتيح API في إعدادات الأسرار (Secrets)."
     
     name = st.session_state.get('current_user', 'مستخدم')
     full_prompt = f"المستخدم اسمه {name}. أجب على هذا السؤال الطبي/الطوارئ: {u_input}"
 
-    # محاولة تجربة المفاتيح المتاحة
-    random.shuffle(keys_pool) # خلط المفاتيح لتوزيع الضغط
-    for current_key in keys_pool:
+    # خلط المفاتيح لتوزيع الطلبات بشكل عادل
+    shuffled_keys = list(keys_pool)
+    random.shuffle(shuffled_keys)
+
+    for current_key in shuffled_keys:
         try:
-            genai.configure(api_key=current_key)
-            # استخدام موديل مستقر ومعروف
+            genai.configure(api_key=str(current_key).strip())
+            # استخدام إصدار مستقر
             model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(full_prompt)
             return response.text
-        except Exception as e:
-            continue # تجربة المفتاح التالي في حال الفشل
+        except Exception:
+            continue 
             
-    return "⚠️ جميع المفاتيح مشغولة حالياً أو بها مشكلة، حاول مرة أخرى لاحقاً."
+    return "⚠️ جميع المفاتيح مشغولة حالياً، حاول مرة أخرى."
+
+def get_dynamic_key(base_name):
+    """تولد مفتاح فريد لمنع خطأ التكرار في ستريم ليت"""
+    random_id = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+    return f"{base_name}_{random_id}"
 
 # --- 2. تهيئة Firebase بشكل مستقر ---
 if 'db' not in st.session_state:
     st.session_state.db = None
 
 def init_firebase():
+    """تهيئة اتصال قاعدة البيانات مرة واحدة فقط"""
     if not firebase_admin._apps:
         try:
             if "firebase" in st.secrets:
@@ -57,42 +71,39 @@ def init_firebase():
                 cred = credentials.Certificate(fb_conf)
                 firebase_admin.initialize_app(cred)
             else:
-                # للمحلي فقط
+                # محاولة التحميل من الملف المحلي إذا لم يوجد في Secrets
                 if os.path.exists("serviceAccountKey.json"):
                     cred = credentials.Certificate("serviceAccountKey.json")
                     firebase_admin.initialize_app(cred)
                 else:
                     return None
         except Exception as e:
+            st.error(f"Firebase Initialization Error: {e}")
             return None
     
     return firestore.client()
 
-# تعيين قاعدة البيانات
+# تعيين قاعدة البيانات في حالة الجلسة لضمان توفرها
 if st.session_state.db is None:
     st.session_state.db = init_firebase()
 
 db = st.session_state.db
 
-# --- 3. بقية الدوال الأساسية (تشفير، ريجستري، إلخ) ---
-# [ملاحظة: تبقى بقية الدوال كما هي في ملفك الأصلي مع التأكد من استخدام st.session_state.db]
-
-# ... (تكملة كود التشفير والجلسات والتصميم من ملفك)
-
-# --- 3. جلب المفاتيح العامة (Keys) ---
+# --- 3. جلب المفاتيح العامة (General Keys) ---
 try:
     if "general" in st.secrets:
         INTERNAL_KEY = st.secrets["general"].get("internal_key")
         GEMINI_KEY = st.secrets["general"].get("GEMINI_API_KEY")
-        encryption_key = st.secrets["general"].get("ENCRYPTION_KEY")
+        encryption_key_val = st.secrets["general"].get("ENCRYPTION_KEY")
     else:
         INTERNAL_KEY = st.secrets.get("internal_key")
         GEMINI_KEY = st.secrets.get("GEMINI_API_KEY")
-        encryption_key = st.secrets.get("ENCRYPTION_KEY")
-except Exception as e:
-    st.warning("⚠️ بعض المفاتيح العامة مفقودة في الإعدادات")
+        encryption_key_val = st.secrets.get("ENCRYPTION_KEY")
+except Exception:
+    INTERNAL_KEY = "123456"
+    encryption_key_val = "derICcTaCeVq7LwwhDbwP6cfRiuKyYzclAmnNmxwczY="
 
-# --- 4. إدارة حالة الجلسة ---
+# --- 4. إدارة حالة الجلسة والتصميم ---
 if 'check_attempts' not in st.session_state:
     st.session_state.check_attempts = 0
 if "authenticated" not in st.session_state:
@@ -100,7 +111,6 @@ if "authenticated" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "HOME"
 
-# --- 4. واجهة CSS والتصميم ---
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {display: none;}
@@ -109,43 +119,36 @@ st.markdown("""
         [data-testid="stMainView"] { width: 100% !important; margin-left: 0px !important; }
         .stAppDeployButton {display: none !important;}
         header { visibility: hidden; }
-        /* كارت رد المسعف الذكي النيوني */
-.ai-neon-card {
-    background: #0d1117;
-    border: 2px solid #00d4ff;
-    border-radius: 15px;
-    padding: 20px;
-    margin-top: 20px;
-    box-shadow: 0 0 15px #00d4ff, inset 0 0 10px #00d4ff;
-    animation: slide_up 0.5s ease-out;
-}
+        
+        .ai-neon-card {
+            background: #0d1117;
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 0 15px #00d4ff, inset 0 0 10px #00d4ff;
+        }
 
-.ai-title {
-    color: #00d4ff;
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-shadow: 0 0 10px #00d4ff;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+        .ai-title {
+            color: #00d4ff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #00d4ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-.ai-content {
-    color: #ffffff;
-    line-height: 1.8;
-    font-size: 1rem;
-}
+        .ai-content {
+            color: #ffffff;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "page" not in st.session_state:
-    st.session_state.page = "HOME"
-
-# --- 2. تعريف الدوال الأساسية وإدارة الملفات السحابية ---
-
+# --- 5. تعريف الدوال الأساسية وإدارة الملفات السحابية ---
 SESSION_FILE = "assets/sessions.json"
 KEY_FILE = "assets/internal.key"
 REGISTRY_FILE = "assets/user_registry.json"
@@ -154,6 +157,13 @@ if not os.path.exists("assets"):
     os.makedirs("assets")
 
 def get_cipher():
+    """جلب محرك التشفير باستخدام المفتاح المخزن"""
+    if encryption_key_val:
+        try:
+            return Fernet(encryption_key_val.encode())
+        except:
+            pass
+    
     if not os.path.exists(KEY_FILE):
         key = Fernet.generate_key()
         with open(KEY_FILE, "wb") as f: f.write(key)
@@ -170,33 +180,38 @@ def get_registry():
 
 def save_to_registry(username, password):
     registry = get_registry()
-    # تشفير كلمة المرور باستخدام فرنيت (Fernet) بدلاً من الـ Hash
     encrypted_password = cipher.encrypt(password.encode('utf-8')).decode('utf-8')
     registry[username] = encrypted_password
     with open(REGISTRY_FILE, "w") as f: 
         json.dump(registry, f)
 
 def save_user_data(username, data):
-    if db is not None:
-        # تشفير البيانات قبل إرسالها للسحابة لضمان الخصوصية
-        encrypted_data = cipher.encrypt(json.dumps(data).encode()).decode()
-        db.collection("users").document(username).set({"vault": encrypted_data})
+    """حفظ بيانات المستخدم في Firestore مع التشفير"""
+    if st.session_state.db is not None:
+        try:
+            encrypted_data = cipher.encrypt(json.dumps(data).encode()).decode()
+            st.session_state.db.collection("users").document(username).set({"vault": encrypted_data})
+        except Exception as e:
+            st.error(f"Error saving data: {e}")
     else:
         st.error("قاعدة البيانات غير متصلة. تأكد من إعدادات Firebase.")
 
 def load_user_data(username):
+    """تحميل بيانات المستخدم من Firestore وفك تشفيرها"""
+    if st.session_state.db is None:
+        return None
     try:
-        doc_ref = db.collection("users").document(username)
+        doc_ref = st.session_state.db.collection("users").document(username)
         doc = doc_ref.get()
         if doc.exists:
             encrypted_data = doc.to_dict().get("vault")
             user_data = json.loads(cipher.decrypt(encrypted_data.encode()).decode())
-            if "ai_chat_history" not in user_data:
-                user_data["ai_chat_history"] = []
-            if "personal_chat" not in user_data:
-                user_data["personal_chat"] = []
+            # التأكد من وجود الحقول الأساسية لتجنب KeyError
+            for key in ["ai_chat_history", "personal_chat", "meds"]:
+                if key not in user_data:
+                    user_data[key] = []
             return user_data
-    except:
+    except Exception:
         return None
     return None
 
